@@ -3,6 +3,7 @@ tmp/
 .venv/
 __pycache__/
 *.pyc
+.DS_Store
 
 # Generated tool caches and reports
 .mypy_cache/
@@ -33,3 +34,4 @@ assessments/
 # Local agent instructions
 AGENTS.md
 IMPLEMENTATION_PLAN.md
+agents/

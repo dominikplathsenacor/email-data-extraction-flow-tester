@@ -16,15 +16,19 @@ def test_build_placeholder_configuration_contains_all_supported_sections() -> No
 
     assert "Test configuration template" in scaffold
     assert "schema:" in scaffold
+    assert "transport:" in scaffold
+    assert "rest:" in scaffold
     assert "avsc:" in scaffold
     assert "json_schema:" in scaffold
+    assert "kafka_event:" in scaffold
+    assert "rest_response:" in scaffold
     assert "matching:" in scaffold
     assert "smtp:" in scaffold
     assert "mail:" in scaffold
     assert "kafka:" in scaffold
     assert "<REQUIRED>" in scaffold
     assert "<OPTIONAL>" in scaffold
-    assert "# Choose exactly one event schema type" in scaffold
+    assert "# REST response schema" in scaffold
 
 
 def test_write_placeholder_configuration_writes_file(tmp_path: Path) -> None:

@@ -11,8 +11,10 @@ from .runtime_settings import (
     KafkaSettings,
     MailSettings,
     MatchingConfig,
+    RestSettings,
     SchemaConfig,
     SMTPSettings,
+    TransportSettings,
 )
 
 __all__ = [
@@ -20,8 +22,10 @@ __all__ = [
     "KafkaSettings",
     "MailSettings",
     "MatchingConfig",
+    "RestSettings",
     "SchemaConfig",
     "SMTPSettings",
+    "TransportSettings",
     "ConfigurationError",
     "load_configuration",
     "DEFAULT_CONFIG_FILENAME",

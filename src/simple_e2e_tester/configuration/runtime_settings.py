@@ -66,7 +66,31 @@ class Configuration:
 
     path: Path
     schema: SchemaConfig
+    response_schema: SchemaConfig
+    kafka_event_schema: SchemaConfig | None
+    transport: TransportSettings
     matching: MatchingConfig
     smtp: SMTPSettings
     mail: MailSettings
     kafka: KafkaSettings
+    rest: RestSettings | None
+
+
+@dataclass(frozen=True)
+class TransportSettings:
+    """Execution transport selection."""
+
+    mode: str
+
+
+@dataclass(frozen=True)
+class RestSettings:
+    """REST transport settings."""
+
+    base_url: str
+    path: str
+    method: str
+    timeout_seconds: int
+    retry_count: int
+    retry_backoff_ms: int
+    defaults: Mapping[str, str]

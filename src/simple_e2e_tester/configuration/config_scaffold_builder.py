@@ -10,15 +10,25 @@ _CONFIG_SCAFFOLD_TEMPLATE = """# Test configuration template for simple-e2e-test
 # Replace every <REQUIRED> placeholder before running generate-template or run.
 # Replace <OPTIONAL> placeholders only when your setup needs them.
 
+transport:
+  # Supported: rest (default), email_kafka
+  mode: "rest"
+
 schema:
-  # Choose exactly one event schema type (avsc or json_schema).
-  avsc:
-    # Provide either inline event schema JSON text or an event schema path.
-    inline: "<REQUIRED>"
-    # path: "<OPTIONAL>"
-  # json_schema:
-  #   inline: "<OPTIONAL>"
-  #   path: "<OPTIONAL>"
+  # REST response schema (used in transport.mode=rest)
+  rest_response:
+    json_schema:
+      # Provide either inline event schema JSON text or an event schema path.
+      inline: "<REQUIRED>"
+      # path: "<OPTIONAL>"
+  # Kafka event schema (used in transport.mode=email_kafka)
+  kafka_event:
+    avsc:
+      inline: "<OPTIONAL>"
+      # path: "<OPTIONAL>"
+    # json_schema:
+    #   inline: "<OPTIONAL>"
+    #   path: "<OPTIONAL>"
 
 matching:
   # matching.from_field and matching.subject_field must be flattened event schema paths.
@@ -55,6 +65,22 @@ kafka:
   timeout_seconds: "<OPTIONAL>"
   poll_interval_ms: "<OPTIONAL>"
   auto_offset_reset: "<OPTIONAL>"
+
+rest:
+  base_url: "<REQUIRED>"
+  path: "<REQUIRED>"
+  method: "POST"
+  timeout_seconds: "<OPTIONAL>"
+  retry_count: "<OPTIONAL>"
+  retry_backoff_ms: "<OPTIONAL>"
+  defaults:
+    ag: "<REQUIRED>"
+    dokart: "<REQUIRED>"
+    dokrefuid: "<REQUIRED>"
+    eingangsdatum: "<REQUIRED>"
+    flowid: "<REQUIRED>"
+    ordnungsbegriff: "<REQUIRED>"
+    referenztyp: "EM"
 """
 
 

@@ -19,8 +19,10 @@ from .runtime_settings import (
     KafkaSettings,
     MailSettings,
     MatchingConfig,
+    RestSettings,
     SchemaConfig,
     SMTPSettings,
+    TransportSettings,
 )
 
 
@@ -46,9 +48,12 @@ def load_configuration(config_path: Path | str) -> Configuration:
     if not isinstance(parsed, Mapping):
         raise ConfigurationError("Configuration root must be a mapping.")
 
-    schema = _parse_schema_section(parsed.get("schema"), path.parent)
+    transport = _parse_transport_section(parsed.get("transport"))
+    schema, response_schema, kafka_event_schema = _parse_schema_section(
+        parsed.get("schema"), path.parent, transport
+    )
     try:
-        schema_document = load_schema_document(schema)
+        schema_document = load_schema_document(response_schema)
         flattened_fields = flatten_schema(schema_document)
     except SchemaError as exc:
         raise ConfigurationError(str(exc)) from exc
@@ -58,18 +63,74 @@ def load_configuration(config_path: Path | str) -> Configuration:
     smtp = _parse_smtp_section(parsed.get("smtp"))
     mail = _parse_mail_section(parsed.get("mail"))
     kafka = _parse_kafka_section(parsed.get("kafka"))
+    rest = _parse_rest_section(parsed.get("rest"), transport)
 
     return Configuration(
         path=path,
         schema=schema,
+        response_schema=response_schema,
+        kafka_event_schema=kafka_event_schema,
+        transport=transport,
         matching=matching,
         smtp=smtp,
         mail=mail,
         kafka=kafka,
+        rest=rest,
     )
 
 
-def _parse_schema_section(value: Any, base_path: Path) -> SchemaConfig:
+def _parse_schema_section(
+    value: Any, base_path: Path, transport: TransportSettings
+) -> tuple[SchemaConfig, SchemaConfig, SchemaConfig | None]:
+    """Parse configured schemas and return `(schema, response_schema, kafka_event_schema)`.
+
+    Tuple elements:
+      1. `schema`: legacy compatibility alias used by existing call sites.
+      2. `response_schema`: schema used to flatten fields for matching/validation.
+      3. `kafka_event_schema`: optional explicit Kafka-event schema from
+         `schema.kafka_event` for mode-specific execution wiring.
+
+    Notes:
+      - Legacy single-schema configs (`schema.avsc` / `schema.json_schema`) map to all
+        active schema slots to preserve current behavior.
+      - In `rest` mode, `response_schema` resolves from `schema.rest_response`.
+      - In `email_kafka` mode, `response_schema` resolves from `schema.kafka_event`.
+    """
+    section = _require_mapping(value, "schema")
+
+    has_legacy_schema = any(section.get(key) for key in ("avsc", "json_schema"))
+    if has_legacy_schema:
+        schema = _parse_single_schema_config(section, base_path)
+        return schema, schema, schema
+
+    rest_raw = section.get("rest_response")
+    kafka_raw = section.get("kafka_event")
+    rest_schema = (
+        _parse_single_schema_config(_require_mapping(rest_raw, "schema.rest_response"), base_path)
+        if rest_raw is not None
+        else None
+    )
+    kafka_schema = (
+        _parse_single_schema_config(_require_mapping(kafka_raw, "schema.kafka_event"), base_path)
+        if kafka_raw is not None
+        else None
+    )
+
+    if transport.mode == "rest":
+        if rest_schema is None:
+            raise ConfigurationError(
+                "schema.rest_response must be provided when transport.mode is 'rest'."
+            )
+        return rest_schema, rest_schema, kafka_schema
+
+    if kafka_schema is None:
+        raise ConfigurationError(
+            "schema.kafka_event must be provided when transport.mode is 'email_kafka'."
+        )
+    return kafka_schema, kafka_schema, kafka_schema
+
+
+def _parse_single_schema_config(value: Any, base_path: Path) -> SchemaConfig:
     section = _require_mapping(value, "schema")
     type_candidates = [key for key in ("avsc", "json_schema") if section.get(key)]
     if len(type_candidates) != 1:
@@ -84,6 +145,16 @@ def _parse_schema_section(value: Any, base_path: Path) -> SchemaConfig:
         raise ConfigurationError("Schema text cannot be empty.")
 
     return SchemaConfig(schema_type=schema_type, text=text, source_path=source_path)
+
+
+def _parse_transport_section(value: Any) -> TransportSettings:
+    if value is None:
+        return TransportSettings(mode="email_kafka")
+    section = _require_mapping(value, "transport")
+    mode = _require_non_empty_string(section.get("mode"), "transport.mode").lower()
+    if mode not in {"rest", "email_kafka"}:
+        raise ConfigurationError("transport.mode must be either 'rest' or 'email_kafka'.")
+    return TransportSettings(mode=mode)
 
 
 def _load_schema_definition(definition: Any, base_path: Path) -> tuple[str, Path | None]:
@@ -186,6 +257,43 @@ def _parse_kafka_section(value: Any) -> KafkaSettings:
     )
 
 
+def _parse_rest_section(value: Any, transport: TransportSettings) -> RestSettings | None:
+    if value is None:
+        if transport.mode == "rest":
+            raise ConfigurationError("Configuration section 'rest' is required.")
+        return None
+
+    section = _require_mapping(value, "rest")
+    defaults = _require_mapping(section.get("defaults"), "rest.defaults")
+    defaults_required = (
+        "ag",
+        "dokart",
+        "dokrefuid",
+        "eingangsdatum",
+        "flowid",
+        "ordnungsbegriff",
+        "referenztyp",
+    )
+    parsed_defaults = {
+        key: _require_non_empty_string(defaults.get(key), f"rest.defaults.{key}")
+        for key in defaults_required
+    }
+    method = _require_non_empty_string(section.get("method", "POST"), "rest.method").upper()
+    return RestSettings(
+        base_url=_require_non_empty_string(section.get("base_url"), "rest.base_url"),
+        path=_require_non_empty_string(section.get("path"), "rest.path"),
+        method=method,
+        timeout_seconds=_require_positive_int(
+            section.get("timeout_seconds", 30), "rest.timeout_seconds"
+        ),
+        retry_count=_require_non_negative_int(section.get("retry_count", 2), "rest.retry_count"),
+        retry_backoff_ms=_require_non_negative_int(
+            section.get("retry_backoff_ms", 250), "rest.retry_backoff_ms"
+        ),
+        defaults=parsed_defaults,
+    )
+
+
 def _normalize_bootstrap_servers(value: Any) -> tuple[str, ...]:
     if value is None:
         raise ConfigurationError("kafka.bootstrap_servers is required.")
@@ -262,4 +370,14 @@ def _require_positive_int(value: Any, field_name: str) -> int:
         raise ConfigurationError(f"{field_name} must be an integer.")
     if value <= 0:
         raise ConfigurationError(f"{field_name} must be greater than zero.")
+    return value
+
+
+def _require_non_negative_int(value: Any, field_name: str) -> int:
+    if isinstance(value, bool):
+        raise ConfigurationError(f"{field_name} must be an integer.")
+    if not isinstance(value, int):
+        raise ConfigurationError(f"{field_name} must be an integer.")
+    if value < 0:
+        raise ConfigurationError(f"{field_name} must be greater than or equal to zero.")
     return value
