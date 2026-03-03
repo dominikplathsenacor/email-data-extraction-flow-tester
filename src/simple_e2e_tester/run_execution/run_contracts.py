@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from simple_e2e_tester.configuration.runtime_settings import Configuration
+from simple_e2e_tester.email_sending.delivery_outcomes import SendStatus
+from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEventMessage
 from simple_e2e_tester.schema_management.schema_models import FlattenedField
 from simple_e2e_tester.template_ingestion.testcase_models import TemplateTestCase
 
@@ -37,3 +39,12 @@ class RunArtifacts:
     fields: tuple[FlattenedField, ...]
     testcases: tuple[TemplateTestCase, ...]
     attachments_base: Path
+
+
+@dataclass(frozen=True)
+class TransportExecutionResult:
+    """Boundary output returned by an execution transport."""
+
+    send_status_by_test_id: dict[str, SendStatus]
+    sent_ok: int
+    actual_messages: tuple[ActualEventMessage, ...]

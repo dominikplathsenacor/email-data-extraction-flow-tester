@@ -8,9 +8,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
-from simple_e2e_tester.email_sending.delivery_outcomes import EmailSendResult
+from simple_e2e_tester.email_sending.delivery_outcomes import EmailSendResult, SendStatus
 from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEventMessage
-from simple_e2e_tester.run_execution.run_contracts import RunRequest
+from simple_e2e_tester.run_execution.run_contracts import RunRequest, TransportExecutionResult
 from simple_e2e_tester.run_execution.validation_run_use_case import (
     execute_email_kafka_validation_run,
 )
@@ -396,3 +396,49 @@ def test_given_all_enabled_expected_events_when_live_run_matches_then_kafka_read
 
     assert outcome.sent_ok == 2
     assert trailing_events_consumed == 0
+
+
+def test_execute_run_use_case_uses_injected_execution_transport(tmp_path: Path) -> None:
+    config_path = _write_config(tmp_path, schema_type="json_schema")
+    template_path = _write_template(tmp_path, config_path)
+    output_dir = tmp_path / "results"
+    observed_transport_args: dict[str, object] = {}
+
+    class FakeExecutionTransport:
+        def execute(self, *, artifacts, run_start):
+            observed_transport_args["testcase_count"] = len(artifacts.testcases)
+            observed_transport_args["run_start_type"] = type(run_start).__name__
+            flattened = {
+                "sender": "sender@example.com",
+                "subject": "Subject-1",
+                "score": 1.58,
+            }
+            return TransportExecutionResult(
+                send_status_by_test_id={"TC-1": SendStatus.SENT},
+                sent_ok=1,
+                actual_messages=(
+                    ActualEventMessage(
+                        key=None,
+                        value=flattened,
+                        timestamp=datetime.now(UTC),
+                        flattened=flattened,
+                    ),
+                ),
+            )
+
+    outcome = execute_email_kafka_validation_run(
+        RunRequest(
+            config_path=str(config_path),
+            input_path=str(template_path),
+            output_dir=str(output_dir),
+            dry_run=False,
+        ),
+        execution_transport=FakeExecutionTransport(),
+    )
+
+    assert outcome.dry_run is False
+    assert outcome.sent_ok == 1
+    assert observed_transport_args == {
+        "testcase_count": 1,
+        "run_start_type": "datetime",
+    }

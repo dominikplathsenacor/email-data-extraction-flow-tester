@@ -7,6 +7,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 from simple_e2e_tester.configuration import ConfigurationError, load_configuration
 from simple_e2e_tester.email_sending.delivery_outcomes import SendStatus
@@ -33,7 +34,12 @@ from simple_e2e_tester.template_ingestion.workbook_reader import (
     read_template,
 )
 
-from .run_contracts import RunArtifacts, RunOutcome, RunRequest
+from .run_contracts import (
+    RunArtifacts,
+    RunOutcome,
+    RunRequest,
+    TransportExecutionResult,
+)
 
 
 class RunExecutionError(Exception):
@@ -49,12 +55,20 @@ class _RunExecution:
     match_result: MatchValidationResult
 
 
+class ExecutionTransport(Protocol):
+    """Transport boundary for collecting actual events for a run."""
+
+    def execute(self, *, artifacts: RunArtifacts, run_start: datetime) -> TransportExecutionResult:
+        """Execute one run through a concrete transport."""
+
+
 def execute_email_kafka_validation_run(
     request: RunRequest,
     *,
     email_sender_cls=None,
     kafka_service_cls=None,
     smtp_client_factory: Callable[[], SynchronousSMTPClient] | None = None,
+    execution_transport: ExecutionTransport | None = None,
 ) -> RunOutcome:
     """Execute one full email-kafka validation run and return run outcome."""
     resolved_email_sender_cls = email_sender_cls or ExpectedEventDispatcher
@@ -77,6 +91,7 @@ def execute_email_kafka_validation_run(
             kafka_service=kafka_service,
             email_sender_cls=resolved_email_sender_cls,
             smtp_client_factory=resolved_smtp_client_factory,
+            execution_transport=execution_transport,
         )
     )
 
@@ -179,31 +194,37 @@ def _execute_live_run(
     kafka_service,
     email_sender_cls,
     smtp_client_factory: Callable[[], SynchronousSMTPClient],
+    execution_transport: ExecutionTransport | None,
 ) -> _RunExecution:
-    sender = email_sender_cls(
-        smtp_client=smtp_client_factory(),
-        smtp_settings=artifacts.configuration.smtp,
-        mail_settings=artifacts.configuration.mail,
-        attachments_base=artifacts.attachments_base,
-    )
-    kafka_future: Future[list] | None = None
-    enabled_testcases = [testcase for testcase in artifacts.testcases if testcase.enabled]
-    expected_events_for_stop = to_expected_events(enabled_testcases)
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        if kafka_service and enabled_testcases:
-            kafka_future = executor.submit(
-                _read_actual_event_messages,
-                kafka_service,
-                run_start,
-                expected_events_for_stop,
-                artifacts.configuration.matching,
-                artifacts.fields,
-            )
-        send_results = sender.send_all(artifacts.testcases)
-        kafka_messages = kafka_future.result() if kafka_future else []
-
-    send_status_by_test_id = {result.test_id: result.status for result in send_results}
-    sent_ok = sum(1 for result in send_results if result.status == SendStatus.SENT)
+    if execution_transport is None:
+        sender = email_sender_cls(
+            smtp_client=smtp_client_factory(),
+            smtp_settings=artifacts.configuration.smtp,
+            mail_settings=artifacts.configuration.mail,
+            attachments_base=artifacts.attachments_base,
+        )
+        kafka_future: Future[list] | None = None
+        enabled_testcases = [testcase for testcase in artifacts.testcases if testcase.enabled]
+        expected_events_for_stop = to_expected_events(enabled_testcases)
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            if kafka_service and enabled_testcases:
+                kafka_future = executor.submit(
+                    _read_actual_event_messages,
+                    kafka_service,
+                    run_start,
+                    expected_events_for_stop,
+                    artifacts.configuration.matching,
+                    artifacts.fields,
+                )
+            send_results = sender.send_all(artifacts.testcases)
+            kafka_messages = kafka_future.result() if kafka_future else []
+        send_status_by_test_id = {result.test_id: result.status for result in send_results}
+        sent_ok = sum(1 for result in send_results if result.status == SendStatus.SENT)
+    else:
+        transport_result = execution_transport.execute(artifacts=artifacts, run_start=run_start)
+        send_status_by_test_id = transport_result.send_status_by_test_id
+        sent_ok = transport_result.sent_ok
+        kafka_messages = list(transport_result.actual_messages)
     sent_testcases = [
         testcase
         for testcase in artifacts.testcases
