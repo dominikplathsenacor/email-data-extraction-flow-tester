@@ -65,6 +65,8 @@ class RequestsRestRequestClient:
 class RestExecutionTransport:
     """Execute enabled testcases against a REST interface."""
 
+    _ABORT_AFTER_CONSECUTIVE_FAILURES = 3
+
     def __init__(self, client: RestRequestClient) -> None:
         self._client = client
 
@@ -77,10 +79,14 @@ class RestExecutionTransport:
         send_status_by_test_id: dict[str, SendStatus] = {}
         actual_messages: list[ActualEventMessage] = []
         sent_ok = 0
+        consecutive_failures = 0
         endpoint = _build_endpoint(rest_settings.base_url, rest_settings.path)
 
         for testcase in artifacts.testcases:
             if not testcase.enabled:
+                send_status_by_test_id[testcase.test_id] = SendStatus.SKIPPED
+                continue
+            if consecutive_failures >= self._ABORT_AFTER_CONSECUTIVE_FAILURES:
                 send_status_by_test_id[testcase.test_id] = SendStatus.SKIPPED
                 continue
             payload = _build_request_payload(testcase=testcase, defaults=rest_settings.defaults)
@@ -93,7 +99,9 @@ class RestExecutionTransport:
                 )
             except RestRequestError:
                 send_status_by_test_id[testcase.test_id] = SendStatus.FAILED
+                consecutive_failures += 1
                 continue
+            consecutive_failures = 0
             send_status_by_test_id[testcase.test_id] = SendStatus.SENT
             sent_ok += 1
             actual_messages.append(

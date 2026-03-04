@@ -38,9 +38,9 @@ class _FakeRestClient:
         json_payload: dict[str, object],
         timeout_seconds: int,
     ) -> dict[str, object]:
+        self.calls.append((method, url, json_payload, timeout_seconds))
         if self.error is not None:
             raise self.error
-        self.calls.append((method, url, json_payload, timeout_seconds))
         return self._response_payload or {}
 
 
@@ -172,6 +172,77 @@ def test_given_unexpected_client_exception_when_rest_transport_executes_then_err
         assert str(exc) == "unexpected"
     else:
         raise AssertionError("expected ValueError to be propagated")
+
+
+def test_given_three_consecutive_request_failures_when_rest_transport_executes_then_it_aborts_early(
+) -> None:
+    testcases = (
+        TemplateTestCase(
+            row_number=3,
+            test_id="TC-1",
+            tags=(),
+            enabled=True,
+            notes="",
+            from_address="sender@example.com",
+            subject="Subject-1",
+            body="Body value",
+            attachment="",
+            expected_values={},
+        ),
+        TemplateTestCase(
+            row_number=4,
+            test_id="TC-2",
+            tags=(),
+            enabled=True,
+            notes="",
+            from_address="sender@example.com",
+            subject="Subject-2",
+            body="Body value",
+            attachment="",
+            expected_values={},
+        ),
+        TemplateTestCase(
+            row_number=5,
+            test_id="TC-3",
+            tags=(),
+            enabled=True,
+            notes="",
+            from_address="sender@example.com",
+            subject="Subject-3",
+            body="Body value",
+            attachment="",
+            expected_values={},
+        ),
+        TemplateTestCase(
+            row_number=6,
+            test_id="TC-4",
+            tags=(),
+            enabled=True,
+            notes="",
+            from_address="sender@example.com",
+            subject="Subject-4",
+            body="Body value",
+            attachment="",
+            expected_values={},
+        ),
+    )
+    artifacts = _build_run_artifacts(testcases)
+    client = _FakeRestClient()
+    client.error = RestRequestError("request failed")
+
+    result = RestExecutionTransport(client).execute(
+        artifacts=artifacts,
+        run_start=datetime.now(UTC),
+    )
+
+    assert result.sent_ok == 0
+    assert len(client.calls) == 3
+    assert result.send_status_by_test_id == {
+        "TC-1": SendStatus.FAILED,
+        "TC-2": SendStatus.FAILED,
+        "TC-3": SendStatus.FAILED,
+        "TC-4": SendStatus.SKIPPED,
+    }
 
 
 def _build_run_artifacts(testcases: tuple[TemplateTestCase, ...]) -> RunArtifacts:

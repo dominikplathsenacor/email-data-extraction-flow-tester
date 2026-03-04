@@ -586,3 +586,73 @@ def test_given_email_kafka_mode_when_run_executes_then_rest_transport_is_not_use
 
     assert outcome.sent_ok == 1
     assert rest_transport_called is False
+
+
+def test_given_rest_mode_when_run_executes_then_runinfo_contains_rest_direct_topic(
+    tmp_path: Path,
+) -> None:
+    config_path = _write_config(tmp_path, schema_type="json_schema")
+    template_path = _write_template(tmp_path, config_path)
+    output_dir = tmp_path / "results"
+
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config.pop("kafka", None)
+    config["transport"] = {"mode": "rest"}
+    config["schema"] = {
+        "rest_response": {"json_schema": config["schema"]["json_schema"]},
+    }
+    config["rest"] = {
+        "base_url": "http://localhost:8080",
+        "path": "/extract",
+        "defaults": {
+            "ag": "AG-1",
+            "dokart": "DOKART-1",
+            "dokrefuid": "DOKREF-1",
+            "eingangsdatum": "2026-01-01-00.00.00.000000",
+            "flowid": "FLOW-1",
+            "ordnungsbegriff": "ORD-1",
+            "referenztyp": "EM",
+        },
+    }
+    config_path.write_text(json.dumps(config), encoding="utf-8")
+
+    class _NoopClient:
+        def request(self, **kwargs):
+            return {}
+
+    class FakeRestTransport(RestExecutionTransport):
+        def __init__(self) -> None:
+            super().__init__(_NoopClient())
+
+        def execute(self, *, artifacts, run_start):
+            flattened = {
+                "sender": "sender@example.com",
+                "subject": "Subject-1",
+                "score": 1.58,
+            }
+            return TransportExecutionResult(
+                send_status_by_test_id={"TC-1": SendStatus.SENT},
+                sent_ok=1,
+                actual_messages=(
+                    ActualEventMessage(
+                        key="TC-1",
+                        value=flattened,
+                        timestamp=datetime.now(UTC),
+                        flattened=flattened,
+                    ),
+                ),
+            )
+
+    outcome = execute_email_kafka_validation_run(
+        RunRequest(
+            config_path=str(config_path),
+            input_path=str(template_path),
+            output_dir=str(output_dir),
+            dry_run=False,
+        ),
+        rest_transport=FakeRestTransport(),
+    )
+
+    run_info_sheet = load_workbook(outcome.output_path)["RunInfo"]
+    run_info = {row[0].value: row[1].value for row in run_info_sheet.iter_rows(min_row=2)}
+    assert run_info["kafka_topic"] == "REST_DIRECT"
