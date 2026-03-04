@@ -96,7 +96,7 @@ def test_generate_template_command_returns_error_for_invalid_config(tmp_path: Pa
     )
 
     assert result.exit_code != 0
-    assert "Exactly one event schema type" in str(result.exception)
+    assert "schema.rest_response must be provided" in str(result.exception)
     assert not output_path.exists()
 
 
@@ -116,7 +116,7 @@ def test_generate_config_command_writes_placeholder_file_with_default_name(tmp_p
         assert "kafka:" in content
         assert "<REQUIRED>" in content
         assert "<OPTIONAL>" in content
-        assert "# Choose exactly one event schema type" in content
+        assert "# REST response schema" in content
         assert str(output_path) in result.output
 
 
