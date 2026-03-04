@@ -52,8 +52,9 @@ python e2k-tester run --config <test-configuration> --input <filled-template.xls
 
 Behavior:
 - Reads and validates input workbook.
-- Sends enabled test case emails (skipped with `--dry-run`).
-- Consumes Kafka records at/after run start time (skipped with `--dry-run`).
+- Chooses transport from config (`rest` default for modern schema configs).
+- `rest` mode: sends one synchronous REST request per enabled test case.
+- `email_kafka` mode: sends emails and consumes Kafka records.
 - Matches actual events to expected events and validates values.
 - Writes results workbook named:
   - `<input_stem>-results-<YYYYMMDD-HHMMSS>.xlsx`
@@ -117,3 +118,9 @@ Also includes:
 - `CONFLICT`: ambiguous message-to-test-case matching.
 - `SEND_FAILED`: SMTP send failed.
 - `SKIPPED`: disabled row or dry-run skipped send.
+
+## Transport notes
+
+- In `rest` mode, the `kafka` section may be omitted.
+- `RunInfo.kafka_topic` is populated with sentinel value `REST_DIRECT` for `rest` runs.
+- In `rest` mode, the run aborts further REST requests after 3 consecutive request failures and marks remaining rows as `SKIPPED`.

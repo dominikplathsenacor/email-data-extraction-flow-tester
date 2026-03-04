@@ -17,17 +17,32 @@ The generated template includes all supported fields with `<REQUIRED>` / `<OPTIO
 
 | Key | Required | Description |
 | --- | --- | --- |
-| `schema` | Yes | Event schema source and type (`avsc` or `json_schema`). |
+| `transport` | No | Execution transport mode (`rest` or `email_kafka`). |
+| `schema` | Yes | Transport-specific response/event schema configuration. |
 | `matching` | Yes | Field names used to match Kafka records to test case rows. |
 | `smtp` | Yes | SMTP connection and parallel sending settings. |
 | `mail` | Yes | Destination mailbox settings. |
-| `kafka` | Yes | Kafka topic/consumer settings. |
+| `kafka` | Depends | Required for `email_kafka`, optional for `rest`. |
+| `rest` | Depends | Required for `rest`, ignored for `email_kafka`. |
+
+## `transport`
+
+Defaults:
+- If omitted and legacy schema keys are used (`schema.avsc` / `schema.json_schema`), mode defaults to `email_kafka`.
+- Otherwise mode defaults to `rest`.
+
+```yaml
+transport:
+  mode: rest
+```
 
 ## `schema`
 
-Exactly one event schema type is allowed:
-- `schema.avsc`
-- `schema.json_schema`
+Supported shapes:
+- Legacy (email-kafka default compatibility): `schema.avsc` or `schema.json_schema`
+- Transport-specific:
+  - `schema.rest_response.<avsc|json_schema>`
+  - `schema.kafka_event.<avsc|json_schema>`
 
 For the chosen event schema type, define exactly one source:
 - `inline`: event schema JSON string
@@ -97,6 +112,8 @@ matching:
 
 ## `kafka`
 
+Required only when `transport.mode` is `email_kafka`.
+
 | Field | Required | Default | Notes |
 | --- | --- | --- | --- |
 | `bootstrap_servers` | Yes | - | String (`"a:9092,b:9092"`) or string list |
@@ -106,6 +123,29 @@ matching:
 | `timeout_seconds` | No | `600` | Global consume timeout |
 | `poll_interval_ms` | No | `500` | Poll interval |
 | `auto_offset_reset` | No | `"latest"` | Lower-cased by loader |
+
+When omitted in `rest` mode, runtime metadata uses sentinel values:
+- `kafka.topic = REST_DIRECT`
+
+## `rest`
+
+Required when `transport.mode` is `rest`.
+
+| Field | Required | Default |
+| --- | --- | --- |
+| `base_url` | Yes | - |
+| `path` | Yes | - |
+| `method` | No | `POST` |
+| `timeout_seconds` | No | `30` |
+| `retry_count` | No | `2` |
+| `retry_backoff_ms` | No | `250` |
+| `defaults.ag` | Yes | - |
+| `defaults.dokart` | Yes | - |
+| `defaults.dokrefuid` | Yes | - |
+| `defaults.eingangsdatum` | Yes | - |
+| `defaults.flowid` | Yes | - |
+| `defaults.ordnungsbegriff` | Yes | - |
+| `defaults.referenztyp` | Yes | - |
 
 ## Minimal runnable config (AVSC run mode)
 

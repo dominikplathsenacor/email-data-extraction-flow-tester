@@ -1,12 +1,12 @@
 # simple-e2e-tester
 
-Schema-driven E2E test runner for validating an `Email -> Kafka` flow.
+Schema-driven E2E test runner for validating `Email -> Kafka` and `REST` extraction flows.
 
 It provides CLI commands for setup and execution:
 - `init`: create `.venv`, install `uv` in that virtual environment, and sync dependency groups.
 - `generate-config`: create a commented YAML test configuration scaffold with placeholders.
 - `generate-template`: build a test template workbook from an AVSC or JSON event schema.
-- `run`: execute test rows from a filled test template, send emails via SMTP, consume Kafka results, validate expected vs actual values, and write a result workbook.
+- `run`: execute test rows from a filled test template using configured transport (`rest` or `email_kafka`), validate expected vs actual values, and write a result workbook.
 
 The implementation follows a domain-first structure and TDD workflow as defined in `AGENTS.md`.
 
