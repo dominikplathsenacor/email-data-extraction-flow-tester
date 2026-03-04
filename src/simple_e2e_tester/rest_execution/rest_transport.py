@@ -13,7 +13,7 @@ from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEven
 from simple_e2e_tester.run_execution.run_contracts import RunArtifacts, TransportExecutionResult
 
 
-class RestRequestClient(Protocol):
+class RestRequestClient(Protocol):  # pylint: disable=too-few-public-methods
     """Protocol for HTTP request adapter used by the transport."""
 
     def request(
@@ -25,13 +25,14 @@ class RestRequestClient(Protocol):
         timeout_seconds: int,
     ) -> Mapping[str, object]:
         """Send one synchronous request and return decoded JSON object."""
+        raise NotImplementedError
 
 
 class RestRequestError(Exception):
     """Raised when a REST request fails at HTTP/transport/protocol level."""
 
 
-class RequestsRestRequestClient:
+class RequestsRestRequestClient:  # pylint: disable=too-few-public-methods
     """HTTP client implementation backed by requests."""
 
     def request(
@@ -62,7 +63,7 @@ class RequestsRestRequestClient:
         return decoded
 
 
-class RestExecutionTransport:
+class RestExecutionTransport:  # pylint: disable=too-few-public-methods
     """Execute enabled testcases against a REST interface."""
 
     _ABORT_AFTER_CONSECUTIVE_FAILURES = 3
@@ -70,7 +71,9 @@ class RestExecutionTransport:
     def __init__(self, client: RestRequestClient) -> None:
         self._client = client
 
-    def execute(self, *, artifacts: RunArtifacts, run_start: datetime) -> TransportExecutionResult:
+    def execute(
+        self, *, artifacts: RunArtifacts, run_start: datetime
+    ) -> TransportExecutionResult:
         del run_start
         rest_settings = artifacts.configuration.rest
         if rest_settings is None:

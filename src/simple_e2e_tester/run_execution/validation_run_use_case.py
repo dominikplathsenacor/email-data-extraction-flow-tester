@@ -59,14 +59,14 @@ class _RunExecution:
     match_result: MatchValidationResult
 
 
-class ExecutionTransport(Protocol):
+class ExecutionTransport(Protocol):  # pylint: disable=too-few-public-methods
     """Transport boundary for collecting actual events for a run."""
 
     def execute(self, *, artifacts: RunArtifacts, run_start: datetime) -> TransportExecutionResult:
         """Execute one run through a concrete transport."""
 
 
-class EmailKafkaExecutionTransport:
+class EmailKafkaExecutionTransport:  # pylint: disable=too-few-public-methods
     """Default execution transport for the email->kafka flow."""
 
     def __init__(
@@ -114,7 +114,7 @@ class EmailKafkaExecutionTransport:
             actual_messages=tuple(kafka_messages),
         )
 
-
+# pylint: disable=too-many-arguments,too-many-locals
 def execute_email_kafka_validation_run(
     request: RunRequest,
     *,
@@ -173,6 +173,7 @@ def execute_email_kafka_validation_run(
         sent_ok=execution.sent_ok,
         dry_run=request.dry_run,
     )
+# pylint: enable=too-many-arguments,too-many-locals
 
 
 def _build_default_execution_transport(

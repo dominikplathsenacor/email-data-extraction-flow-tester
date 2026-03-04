@@ -61,7 +61,7 @@ class KafkaSettings:
 
 
 @dataclass(frozen=True)
-class Configuration:
+class Configuration:  # pylint: disable=too-many-instance-attributes
     """Top-level configuration aggregate."""
 
     path: Path

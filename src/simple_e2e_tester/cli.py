@@ -19,9 +19,9 @@ from simple_e2e_tester.email_sending.email_dispatch import (
     SynchronousSMTPClient,
 )
 from simple_e2e_tester.kafka_consumption.actual_event_reader import ActualEventReader
-from simple_e2e_tester.run_execution import (
+from simple_e2e_tester.run_execution.run_contracts import RunRequest
+from simple_e2e_tester.run_execution.validation_run_use_case import (
     RunExecutionError,
-    RunRequest,
     execute_email_kafka_validation_run,
 )
 from simple_e2e_tester.schema_management import SchemaError, flatten_schema, load_schema_document

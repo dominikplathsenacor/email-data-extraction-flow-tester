@@ -380,6 +380,7 @@ def test_loads_rest_transport_configuration_with_defaults(tmp_path: Path) -> Non
     configuration = load_configuration(config_path)
 
     assert configuration.transport.mode == "rest"
+    assert configuration.rest is not None
     assert configuration.rest.method == "POST"
     assert configuration.rest.timeout_seconds == 30
     assert configuration.rest.retry_count == 2

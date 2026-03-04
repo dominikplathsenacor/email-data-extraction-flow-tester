@@ -30,7 +30,7 @@ class ConfigurationError(Exception):
     """Raised when the configuration file is invalid."""
 
 
-def load_configuration(config_path: Path | str) -> Configuration:
+def load_configuration(config_path: Path | str) -> Configuration:  # pylint: disable=too-many-locals
     """Load and validate the configuration file."""
     path = Path(config_path)
     if not path.exists():

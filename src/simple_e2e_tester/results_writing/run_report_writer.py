@@ -65,7 +65,7 @@ class _RowWriteContext:
     send_status: Mapping[str, SendStatus]
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def write_results_workbook(
     template_path: Path | str,
     output_path: Path | str,
