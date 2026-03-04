@@ -13,17 +13,36 @@ The implementation follows a domain-first structure and TDD workflow as defined 
 ## Current implementation status
 
 Implemented and verified by tests:
-- Configuration loading and validation (YAML/JSON).
+- Configuration loading and validation (YAML/JSON), including transport-aware defaults.
 - Event schema flattening for AVSC and JSON Schema.
 - Template generation (`Metadata`, `Input`, `Expected`) plus `Schema` sheet.
 - Template ingestion and sanity checks (IDs, sender/subject uniqueness, email format, schema column alignment).
 - SMTP email composition/sending with concurrency and attachment handling.
 - Kafka consumption with AVSC binary decoding and JSON payload decoding for JSON Schema (including Confluent wire header handling).
+- REST execution transport with synchronous per-row requests and root-object JSON response handling.
 - Matching and validation rules (empty expected cell -> ignored, `MUSS_LEER_SEIN`, float tolerance syntax like `3,14+-0,2`) over expected/actual events.
 - Result workbook writing (`Actual`, `Match`, `RunInfo`, `Schema`).
 
 Known behavior to be aware of:
-- `run --dry-run` is supported for smoke-style runs that skip SMTP/Kafka interactions while still producing a results workbook.
+- `run --dry-run` is supported for smoke-style runs that skip external interactions while still producing a results workbook.
+- REST mode aborts further outbound REST calls after 3 consecutive request failures and marks remaining enabled rows as `SKIPPED`.
+- In REST mode, `RunInfo.kafka_topic` is set to sentinel value `REST_DIRECT`.
+
+## Transport modes
+
+`run` supports two execution transports:
+
+- `rest` (default for modern configs):
+  - sends one synchronous HTTP request per enabled testcase
+  - uses `BODY` as `dok_text`
+  - correlates responses by testcase ID
+- `email_kafka`:
+  - sends emails via SMTP
+  - consumes produced events from Kafka and validates them
+
+Config defaults:
+- If `transport` is omitted and config uses legacy schema keys (`schema.avsc` / `schema.json_schema`), mode defaults to `email_kafka`.
+- Otherwise mode defaults to `rest`.
 
 See `/docs/spec-alignment.md` for a precise spec-vs-implementation map.
 
@@ -75,6 +94,13 @@ python e2k-tester run \
   --config /path/to/config.yaml \
   --input /path/to/template.xlsx \
   --dry-run
+```
+
+Example `transport` section:
+
+```yaml
+transport:
+  mode: rest # or email_kafka
 ```
 
 ## Documentation

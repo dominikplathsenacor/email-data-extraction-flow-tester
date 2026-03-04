@@ -15,6 +15,7 @@ Each domain owns its entities, services, and tests.
 | `template_ingestion` | Read and validate filled test templates into test case objects. | `read_template` |
 | `email_sending` | Compose and send emails via SMTP (parallelized). | `compose_email`, `EmailSender` |
 | `kafka_consumption` | Consume Kafka records from run start and decode Avro payloads. | `KafkaConsumerService.consume_from` |
+| `rest_execution` | Call REST extraction API per testcase and normalize responses. | `RestExecutionTransport`, `RequestsRestRequestClient` |
 | `matching_validation` | Match actual events to expected events and validate expected values. | `match_and_validate` |
 | `results_writing` | Produce output workbook with actuals, match result, and run metadata. | `write_results_workbook` |
 | `run_execution` | Execute the run use case from request to output workbook. | `execute_email_kafka_validation_run` |
@@ -35,8 +36,12 @@ Each domain owns its entities, services, and tests.
 1. Load test configuration and flatten event schema.
 2. Read/validate input workbook.
 3. Record `run_start` timestamp.
-4. Send enabled test cases via SMTP (parallelism from config).
-5. Consume Kafka records with timestamp `>= run_start`.
+4. Resolve execution transport:
+   - `rest` (default for modern transport-aware configs)
+   - `email_kafka` (default for legacy schema-only configs)
+5. Execute transport:
+   - `rest`: synchronous request per enabled row
+   - `email_kafka`: SMTP send + Kafka consume window from `run_start`
 6. Match/validate records against test cases.
 7. Write output workbook:
    - Original columns + `Actual` + `Match`
@@ -44,13 +49,16 @@ Each domain owns its entities, services, and tests.
 
 ## External boundaries
 
-- SMTP server (`smtplib`) for sending test emails.
-- Kafka broker (`confluent-kafka`) for reading produced events.
+- HTTP REST service (`requests`) for REST extraction flow.
+- SMTP server (`smtplib`) for email transport.
+- Kafka broker (`confluent-kafka`) for Kafka transport.
 - Excel IO (`openpyxl`) for template/result workbooks.
 
 ## Architectural invariants currently enforced
 
-- Exactly one event schema type must be configured (`avsc` or `json_schema`).
+- Exactly one schema type per configured schema slot must be configured (`avsc` or `json_schema`).
+- Transport defaults are schema-shape aware (`rest` for modern config shape, `email_kafka` for legacy shape).
+- In REST mode, `kafka` config is optional and run metadata uses sentinel topic `REST_DIRECT`.
 - Matching fields (`matching.from_field`, `matching.subject_field`) must exist in flattened event schema.
 - Template column order must match generated schema-derived fields.
 - IDs must be unique; enabled rows must have unique `(FROM, SUBJECT)` pairs.
