@@ -430,3 +430,89 @@ def test_errors_when_rest_transport_selected_without_rest_response_schema(
 
     with pytest.raises(ConfigurationError, match="rest_response"):
         load_configuration(config_path)
+
+
+def test_defaults_transport_mode_to_rest_when_transport_section_missing(tmp_path: Path) -> None:
+    config = {
+        "schema": {
+            "rest_response": {
+                "json_schema": {
+                    "inline": json.dumps(
+                        {
+                            "type": "object",
+                            "properties": {
+                                "sender": {"type": "string"},
+                                "subject": {"type": "string"},
+                            },
+                        }
+                    )
+                }
+            }
+        },
+        "matching": {"from_field": "sender", "subject_field": "subject"},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "rest": {
+            "base_url": "http://localhost:8080",
+            "path": "/extract",
+            "defaults": {
+                "ag": "SAMPLE_AG",
+                "dokart": "SAMPLE_DOKART",
+                "dokrefuid": "SAMPLE_REF",
+                "eingangsdatum": "2026-01-01-00.00.00.000000",
+                "flowid": "FLOW-1",
+                "ordnungsbegriff": "ORD-1",
+                "referenztyp": "EM",
+            },
+        },
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.transport.mode == "rest"
+
+
+def test_given_rest_mode_when_kafka_section_missing_then_configuration_loads(
+    tmp_path: Path,
+) -> None:
+    config = {
+        "transport": {"mode": "rest"},
+        "schema": {
+            "rest_response": {
+                "json_schema": {
+                    "inline": json.dumps(
+                        {
+                            "type": "object",
+                            "properties": {
+                                "sender": {"type": "string"},
+                                "subject": {"type": "string"},
+                            },
+                        }
+                    )
+                }
+            }
+        },
+        "matching": {"from_field": "sender", "subject_field": "subject"},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "rest": {
+            "base_url": "http://localhost:8080",
+            "path": "/extract",
+            "defaults": {
+                "ag": "SAMPLE_AG",
+                "dokart": "SAMPLE_DOKART",
+                "dokrefuid": "SAMPLE_REF",
+                "eingangsdatum": "2026-01-01-00.00.00.000000",
+                "flowid": "FLOW-1",
+                "ordnungsbegriff": "ORD-1",
+                "referenztyp": "EM",
+            },
+        },
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.transport.mode == "rest"
+    assert configuration.kafka.topic == "REST_DIRECT"

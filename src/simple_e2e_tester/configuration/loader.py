@@ -48,9 +48,10 @@ def load_configuration(config_path: Path | str) -> Configuration:
     if not isinstance(parsed, Mapping):
         raise ConfigurationError("Configuration root must be a mapping.")
 
-    transport = _parse_transport_section(parsed.get("transport"))
+    schema_raw = parsed.get("schema")
+    transport = _parse_transport_section(parsed.get("transport"), schema_raw)
     schema, response_schema, kafka_event_schema = _parse_schema_section(
-        parsed.get("schema"), path.parent, transport
+        schema_raw, path.parent, transport
     )
     try:
         schema_document = load_schema_document(response_schema)
@@ -62,7 +63,7 @@ def load_configuration(config_path: Path | str) -> Configuration:
     matching = _parse_matching_section(parsed.get("matching"), available_fields=field_names)
     smtp = _parse_smtp_section(parsed.get("smtp"))
     mail = _parse_mail_section(parsed.get("mail"))
-    kafka = _parse_kafka_section(parsed.get("kafka"))
+    kafka = _parse_kafka_section(parsed.get("kafka"), transport)
     rest = _parse_rest_section(parsed.get("rest"), transport)
 
     return Configuration(
@@ -147,9 +148,13 @@ def _parse_single_schema_config(value: Any, base_path: Path) -> SchemaConfig:
     return SchemaConfig(schema_type=schema_type, text=text, source_path=source_path)
 
 
-def _parse_transport_section(value: Any) -> TransportSettings:
+def _parse_transport_section(value: Any, schema_value: Any) -> TransportSettings:
     if value is None:
-        return TransportSettings(mode="email_kafka")
+        schema_mapping = schema_value if isinstance(schema_value, Mapping) else {}
+        has_legacy_schema = any(schema_mapping.get(key) for key in ("avsc", "json_schema"))
+        if has_legacy_schema:
+            return TransportSettings(mode="email_kafka")
+        return TransportSettings(mode="rest")
     section = _require_mapping(value, "transport")
     mode = _require_non_empty_string(section.get("mode"), "transport.mode").lower()
     if mode not in {"rest", "email_kafka"}:
@@ -228,7 +233,19 @@ def _parse_mail_section(value: Any) -> MailSettings:
     return MailSettings(to_address=to_address, cc=cc, bcc=bcc)
 
 
-def _parse_kafka_section(value: Any) -> KafkaSettings:
+def _parse_kafka_section(value: Any, transport: TransportSettings) -> KafkaSettings:
+    if value is None:
+        if transport.mode == "rest":
+            return KafkaSettings(
+                bootstrap_servers=("REST_DIRECT",),
+                topic="REST_DIRECT",
+                group_id=None,
+                security={},
+                timeout_seconds=600,
+                poll_interval_ms=500,
+                auto_offset_reset="latest",
+            )
+        raise ConfigurationError("Configuration section 'kafka' is required.")
     section = _require_mapping(value, "kafka")
     bootstrap_servers = _normalize_bootstrap_servers(section.get("bootstrap_servers"))
     topic = _require_non_empty_string(section.get("topic"), "kafka.topic")
