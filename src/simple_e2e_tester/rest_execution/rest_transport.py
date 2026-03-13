@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -11,6 +11,7 @@ import requests
 from simple_e2e_tester.email_sending.delivery_outcomes import SendStatus
 from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEventMessage
 from simple_e2e_tester.run_execution.run_contracts import RunArtifacts, TransportExecutionResult
+from simple_e2e_tester.schema_management.schema_models import FlattenedField
 
 
 class RestRequestClient(Protocol):  # pylint: disable=too-few-public-methods
@@ -23,6 +24,8 @@ class RestRequestClient(Protocol):  # pylint: disable=too-few-public-methods
         url: str,
         json_payload: dict[str, object],
         timeout_seconds: int,
+        basic_auth_username: str | None,
+        basic_auth_password: str | None,
     ) -> Mapping[str, object]:
         """Send one synchronous request and return decoded JSON object."""
         raise NotImplementedError
@@ -42,6 +45,8 @@ class RequestsRestRequestClient:  # pylint: disable=too-few-public-methods
         url: str,
         json_payload: dict[str, object],
         timeout_seconds: int,
+        basic_auth_username: str | None,
+        basic_auth_password: str | None,
     ) -> Mapping[str, object]:
         try:
             response = requests.request(
@@ -49,6 +54,11 @@ class RequestsRestRequestClient:  # pylint: disable=too-few-public-methods
                 url=url,
                 json=json_payload,
                 timeout=timeout_seconds,
+                auth=(
+                    (basic_auth_username, basic_auth_password)
+                    if basic_auth_username is not None and basic_auth_password is not None
+                    else None
+                ),
             )
             response.raise_for_status()
         except requests.RequestException as exc:
@@ -99,7 +109,10 @@ class RestExecutionTransport:  # pylint: disable=too-few-public-methods
                     url=endpoint,
                     json_payload=payload,
                     timeout_seconds=rest_settings.timeout_seconds,
+                    basic_auth_username=rest_settings.basic_auth_username,
+                    basic_auth_password=rest_settings.basic_auth_password,
                 )
+                flattened = _flatten_response_payload(response_payload, artifacts.fields)
             except RestRequestError:
                 send_status_by_test_id[testcase.test_id] = SendStatus.FAILED
                 consecutive_failures += 1
@@ -112,7 +125,7 @@ class RestExecutionTransport:  # pylint: disable=too-few-public-methods
                     key=testcase.test_id,
                     value=dict(response_payload),
                     timestamp=datetime.now(UTC),
-                    flattened=dict(response_payload),
+                    flattened=flattened,
                 )
             )
         return TransportExecutionResult(
@@ -139,3 +152,18 @@ def _build_request_payload(*, testcase, defaults: Mapping[str, str]) -> dict[str
         "referenztyp": defaults["referenztyp"],
         "dok_text": testcase.body,
     }
+
+
+def _flatten_response_payload(
+    payload: Mapping[str, object],
+    schema_fields: Sequence[FlattenedField],
+) -> dict[str, object]:
+    flattened: dict[str, object] = {}
+    for field in schema_fields:
+        value: object = payload
+        for part in field.path.split("."):
+            if not isinstance(value, Mapping) or part not in value:
+                raise RestRequestError(f"REST response is missing schema field '{field.path}'.")
+            value = value[part]
+        flattened[field.path] = value
+    return flattened

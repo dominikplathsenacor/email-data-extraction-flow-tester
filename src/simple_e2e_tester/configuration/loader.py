@@ -282,6 +282,7 @@ def _parse_rest_section(value: Any, transport: TransportSettings) -> RestSetting
 
     section = _require_mapping(value, "rest")
     defaults = _require_mapping(section.get("defaults"), "rest.defaults")
+    auth = _parse_rest_auth_section(section.get("auth"))
     defaults_required = (
         "ag",
         "dokart",
@@ -308,7 +309,26 @@ def _parse_rest_section(value: Any, transport: TransportSettings) -> RestSetting
             section.get("retry_backoff_ms", 250), "rest.retry_backoff_ms"
         ),
         defaults=parsed_defaults,
+        basic_auth_username=auth[0],
+        basic_auth_password=auth[1],
     )
+
+
+def _parse_rest_auth_section(value: Any) -> tuple[str | None, str | None]:
+    if value is None:
+        return None, None
+    section = _require_mapping(value, "rest.auth")
+    basic = section.get("basic")
+    if basic is None:
+        return None, None
+    basic_section = _require_mapping(basic, "rest.auth.basic")
+    username = _optional_string(basic_section.get("username"), "rest.auth.basic.username")
+    password = _optional_string(basic_section.get("password"), "rest.auth.basic.password")
+    if (username is None) != (password is None):
+        raise ConfigurationError(
+            "rest.auth.basic.username and rest.auth.basic.password must be set together."
+        )
+    return username, password
 
 
 def _normalize_bootstrap_servers(value: Any) -> tuple[str, ...]:

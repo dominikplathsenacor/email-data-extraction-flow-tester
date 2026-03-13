@@ -31,6 +31,7 @@ def test_given_valid_json_object_when_request_client_calls_rest_then_mapping_ret
         assert kwargs["url"] == "http://localhost:8080/extract"
         assert kwargs["json"] == {"dok_text": "body"}
         assert kwargs["timeout"] == 30
+        assert kwargs["auth"] == ("user-1", "pw-1")
         return _FakeResponse({"sender": "x", "subject": "y"})
 
     monkeypatch.setattr("requests.request", _fake_request)
@@ -40,6 +41,8 @@ def test_given_valid_json_object_when_request_client_calls_rest_then_mapping_ret
         url="http://localhost:8080/extract",
         json_payload={"dok_text": "body"},
         timeout_seconds=30,
+        basic_auth_username="user-1",
+        basic_auth_password="pw-1",
     )
 
     assert result == {"sender": "x", "subject": "y"}
@@ -56,6 +59,8 @@ def test_given_non_object_json_when_request_client_calls_rest_then_error_raised(
             url="http://localhost:8080/extract",
             json_payload={"dok_text": "body"},
             timeout_seconds=30,
+            basic_auth_username=None,
+            basic_auth_password=None,
         )
 
 
@@ -73,4 +78,6 @@ def test_given_request_exception_when_request_client_calls_rest_then_error_raise
             url="http://localhost:8080/extract",
             json_payload={"dok_text": "body"},
             timeout_seconds=30,
+            basic_auth_username=None,
+            basic_auth_password=None,
         )

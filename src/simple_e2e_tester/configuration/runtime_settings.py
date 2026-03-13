@@ -94,3 +94,5 @@ class RestSettings:
     retry_count: int
     retry_backoff_ms: int
     defaults: Mapping[str, str]
+    basic_auth_username: str | None
+    basic_auth_password: str | None

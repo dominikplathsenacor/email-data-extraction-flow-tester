@@ -37,8 +37,12 @@ class _FakeRestClient:
         url: str,
         json_payload: dict[str, object],
         timeout_seconds: int,
+        basic_auth_username: str | None,
+        basic_auth_password: str | None,
     ) -> dict[str, object]:
-        self.calls.append((method, url, json_payload, timeout_seconds))
+        self.calls.append(
+            (method, url, json_payload, timeout_seconds, basic_auth_username, basic_auth_password)
+        )
         if self.error is not None:
             raise self.error
         return self._response_payload or {}
@@ -87,6 +91,8 @@ def test_given_enabled_testcase_when_rest_transport_executes_then_body_is_mapped
                 "dok_text": "Body value",
             },
             30,
+            None,
+            None,
         )
     ]
 
@@ -245,7 +251,64 @@ def test_given_three_consecutive_request_failures_when_rest_transport_executes_t
     }
 
 
-def _build_run_artifacts(testcases: tuple[TemplateTestCase, ...]) -> RunArtifacts:
+def test_given_nested_response_when_rest_transport_executes_then_schema_fields_are_flattened(
+) -> None:
+    testcase = TemplateTestCase(
+        row_number=3,
+        test_id="TC-REST-NESTED",
+        tags=(),
+        enabled=True,
+        notes="",
+        from_address="sender@example.com",
+        subject="Subject-1",
+        body="Body value",
+        attachment="",
+        expected_values={},
+    )
+    artifacts = _build_run_artifacts(
+        (testcase,),
+        fields=(
+            _field("emailabsender", "string"),
+            _field("emailbetreff", "string"),
+            _field("ki_ergebnis.fachdaten.grund.value", "string"),
+        ),
+        matching=MatchingConfig(
+            from_field="emailabsender",
+            subject_field="emailbetreff",
+        ),
+    )
+    client = _FakeRestClient(
+        {
+            "emailabsender": "sender@example.com",
+            "emailbetreff": "Subject-1",
+            "ki_ergebnis": {
+                "fachdaten": {
+                    "grund": {"value": "Anbieterwechsel"},
+                }
+            },
+        }
+    )
+
+    result = RestExecutionTransport(client).execute(
+        artifacts=artifacts,
+        run_start=datetime.now(UTC),
+    )
+
+    assert result.actual_messages[0].flattened == {
+        "emailabsender": "sender@example.com",
+        "emailbetreff": "Subject-1",
+        "ki_ergebnis.fachdaten.grund.value": "Anbieterwechsel",
+    }
+
+
+def _build_run_artifacts(
+    testcases: tuple[TemplateTestCase, ...],
+    *,
+    fields=(),
+    matching: MatchingConfig | None = None,
+    basic_auth_username: str | None = None,
+    basic_auth_password: str | None = None,
+) -> RunArtifacts:
     schema = SchemaConfig(schema_type="json_schema", text='{"type":"object"}', source_path=None)
     configuration = Configuration(
         path=Path("/tmp/config.yaml"),
@@ -253,7 +316,7 @@ def _build_run_artifacts(testcases: tuple[TemplateTestCase, ...]) -> RunArtifact
         response_schema=schema,
         kafka_event_schema=None,
         transport=TransportSettings(mode="rest"),
-        matching=MatchingConfig(from_field="sender", subject_field="subject"),
+        matching=matching or MatchingConfig(from_field="sender", subject_field="subject"),
         smtp=SMTPSettings(
             host="smtp.example.com",
             port=25,
@@ -290,11 +353,19 @@ def _build_run_artifacts(testcases: tuple[TemplateTestCase, ...]) -> RunArtifact
                 "ordnungsbegriff": "ORD-1",
                 "referenztyp": "EM",
             },
+            basic_auth_username=basic_auth_username,
+            basic_auth_password=basic_auth_password,
         ),
     )
     return RunArtifacts(
         configuration=configuration,
-        fields=(),
+        fields=fields,
         testcases=testcases,
         attachments_base=Path("/tmp"),
     )
+
+
+def _field(path: str, type_name: str) -> object:
+    from simple_e2e_tester.schema_management.schema_models import FlattenedField
+
+    return FlattenedField(path=path, definition={"type": type_name})

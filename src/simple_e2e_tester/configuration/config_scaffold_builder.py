@@ -73,6 +73,10 @@ rest:
   timeout_seconds: "<OPTIONAL>"
   retry_count: "<OPTIONAL>"
   retry_backoff_ms: "<OPTIONAL>"
+  auth:
+    basic:
+      username: "<OPTIONAL>"
+      password: "<OPTIONAL>"
   defaults:
     ag: "<REQUIRED>"
     dokart: "<REQUIRED>"
