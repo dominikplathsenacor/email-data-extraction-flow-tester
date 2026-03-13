@@ -24,7 +24,11 @@ from simple_e2e_tester.run_execution.validation_run_use_case import (
     RunExecutionError,
     execute_email_kafka_validation_run,
 )
-from simple_e2e_tester.schema_management import SchemaError, flatten_schema, load_schema_document
+from simple_e2e_tester.schema_management import (
+    SchemaError,
+    flatten_schema,
+    load_schema_document,
+)
 from simple_e2e_tester.template_generation import generate_template_workbook
 
 
@@ -122,7 +126,9 @@ def generate_template(config_path: str, output_path: str) -> None:
     default=False,
     help="Skip SMTP/Kafka interactions and write a skipped-results workbook.",
 )
-def run_tests(config_path: str, input_path: str, output_dir: str | None, dry_run: bool) -> None:
+def run_tests(
+    config_path: str, input_path: str, output_dir: str | None, dry_run: bool
+) -> None:
     """Execute tests defined in the test template workbook."""
     try:
         outcome = execute_email_kafka_validation_run(

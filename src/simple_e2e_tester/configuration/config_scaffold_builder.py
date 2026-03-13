@@ -108,6 +108,8 @@ def write_placeholder_configuration(output_path: Path | str) -> Path:
     """
     destination = Path(output_path)
     if destination.exists():
-        raise FileExistsError(f"Test configuration file already exists: {destination.resolve()}")
+        raise FileExistsError(
+            f"Test configuration file already exists: {destination.resolve()}"
+        )
     destination.write_text(build_placeholder_configuration(), encoding="utf-8")
     return destination.resolve()

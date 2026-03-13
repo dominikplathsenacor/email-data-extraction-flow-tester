@@ -78,7 +78,9 @@ class ActualEventReader:
         end_time = start_time + timedelta(seconds=self._settings.timeout_seconds)
         try:
             while datetime.now(UTC) < end_time:
-                message = self._consumer.poll(timeout=self._settings.poll_interval_ms / 1000.0)
+                message = self._consumer.poll(
+                    timeout=self._settings.poll_interval_ms / 1000.0
+                )
                 if message is None:
                     continue
                 if message.error():
@@ -135,7 +137,9 @@ class ActualEventReader:
             except json.JSONDecodeError:
                 continue
             if not isinstance(decoded, Mapping):
-                raise ActualEventDecodeError("Decoded JSON payload root must be an object.")
+                raise ActualEventDecodeError(
+                    "Decoded JSON payload root must be an object."
+                )
             return decoded
         raise ActualEventDecodeError(
             "JSON payload decoding failed. Expected UTF-8 encoded JSON object payload."
@@ -202,7 +206,9 @@ class ActualEventReader:
 
         if type_name == "record":
             if schema_node is None:
-                raise ActualEventDecodeError("Record definition is missing from AVSC schema.")
+                raise ActualEventDecodeError(
+                    "Record definition is missing from AVSC schema."
+                )
             fields = schema_node.get("fields")
             if not isinstance(fields, Sequence):
                 raise ActualEventDecodeError("Record schema requires a fields array.")
@@ -217,7 +223,9 @@ class ActualEventReader:
 
         if type_name == "enum":
             if schema_node is None:
-                raise ActualEventDecodeError("Enum definition is missing from AVSC schema.")
+                raise ActualEventDecodeError(
+                    "Enum definition is missing from AVSC schema."
+                )
             symbols = schema_node.get("symbols")
             if not isinstance(symbols, Sequence):
                 raise ActualEventDecodeError("Enum schema requires a symbols array.")
@@ -228,7 +236,9 @@ class ActualEventReader:
 
         if type_name == "array":
             if schema_node is None:
-                raise ActualEventDecodeError("Array definition is missing from AVSC schema.")
+                raise ActualEventDecodeError(
+                    "Array definition is missing from AVSC schema."
+                )
             items_schema = schema_node.get("items")
             items: list[Any] = []
             while True:
@@ -244,7 +254,9 @@ class ActualEventReader:
 
         if type_name == "map":
             if schema_node is None:
-                raise ActualEventDecodeError("Map definition is missing from AVSC schema.")
+                raise ActualEventDecodeError(
+                    "Map definition is missing from AVSC schema."
+                )
             values_schema = schema_node.get("values")
             map_output: dict[str, Any] = {}
             while True:
@@ -261,15 +273,21 @@ class ActualEventReader:
 
         if type_name == "fixed":
             if schema_node is None:
-                raise ActualEventDecodeError("Fixed definition is missing from AVSC schema.")
+                raise ActualEventDecodeError(
+                    "Fixed definition is missing from AVSC schema."
+                )
             size = schema_node.get("size")
             if not isinstance(size, int) or size < 0:
-                raise ActualEventDecodeError("Fixed schema requires a non-negative integer size.")
+                raise ActualEventDecodeError(
+                    "Fixed schema requires a non-negative integer size."
+                )
             return reader.read_exact(size)
 
         named_type = self._named_types.get(type_name)
         if named_type is None:
-            raise ActualEventDecodeError(f"Unsupported or unknown Avro type reference: {type_name}")
+            raise ActualEventDecodeError(
+                f"Unsupported or unknown Avro type reference: {type_name}"
+            )
         return self._decode_avro_node(named_type, reader)
 
     def _load_avro_schema(self, schema_text: str) -> Mapping[str, Any]:
@@ -330,7 +348,9 @@ class ActualEventReader:
                     else:
                         raise KeyError(part)
             except KeyError as exc:
-                raise ActualEventDecodeError(f"Missing schema field {field.path}") from exc
+                raise ActualEventDecodeError(
+                    f"Missing schema field {field.path}"
+                ) from exc
             flattened[field.path] = value
         return flattened
 
@@ -419,7 +439,9 @@ class _AvroBinaryReader:
         try:
             return raw.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise ActualEventDecodeError("Invalid UTF-8 string in Avro payload.") from exc
+            raise ActualEventDecodeError(
+                "Invalid UTF-8 string in Avro payload."
+            ) from exc
 
     def read_long(self) -> int:
         """Read Avro zigzag-encoded long."""

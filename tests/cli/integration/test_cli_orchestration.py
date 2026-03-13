@@ -78,7 +78,9 @@ def test_generate_template_command_writes_workbook(tmp_path: Path) -> None:
     assert "Schema" in workbook.sheetnames
 
 
-def test_generate_template_command_returns_error_for_invalid_config(tmp_path: Path) -> None:
+def test_generate_template_command_returns_error_for_invalid_config(
+    tmp_path: Path,
+) -> None:
     runner = CliRunner()
     config_path = tmp_path / "invalid-config.json"
     config_path.write_text(json.dumps({"schema": {}, "smtp": {}}), encoding="utf-8")
@@ -100,7 +102,9 @@ def test_generate_template_command_returns_error_for_invalid_config(tmp_path: Pa
     assert not output_path.exists()
 
 
-def test_generate_config_command_writes_placeholder_file_with_default_name(tmp_path: Path) -> None:
+def test_generate_config_command_writes_placeholder_file_with_default_name(
+    tmp_path: Path,
+) -> None:
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
         result = runner.invoke(cli, ["generate-config"])
@@ -120,7 +124,9 @@ def test_generate_config_command_writes_placeholder_file_with_default_name(tmp_p
         assert str(output_path) in result.output
 
 
-def test_generate_config_command_fails_when_output_file_already_exists(tmp_path: Path) -> None:
+def test_generate_config_command_fails_when_output_file_already_exists(
+    tmp_path: Path,
+) -> None:
     runner = CliRunner()
     output_path = tmp_path / "config.yaml"
     output_path.write_text("already-there", encoding="utf-8")
@@ -160,7 +166,8 @@ def test_run_command_dry_run_writes_results_workbook(tmp_path: Path) -> None:
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -194,7 +201,9 @@ def test_run_command_dry_run_writes_results_workbook(tmp_path: Path) -> None:
     assert result_sheet.cell(row=3, column=result_sheet.max_column).value == "SKIPPED"
     run_info_sheet = result_workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["matched"] == 0
@@ -225,7 +234,8 @@ def test_run_command_with_mocked_dependencies_writes_validated_results(
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -256,7 +266,9 @@ def test_run_command_with_mocked_dependencies_writes_validated_results(
                 },
             )
 
-    monkeypatch.setattr("simple_e2e_tester.cli.ExpectedEventDispatcher", FakeEmailSender)
+    monkeypatch.setattr(
+        "simple_e2e_tester.cli.ExpectedEventDispatcher", FakeEmailSender
+    )
     monkeypatch.setattr("simple_e2e_tester.cli.ActualEventReader", FakeKafkaService)
 
     run_result = runner.invoke(
@@ -281,7 +293,9 @@ def test_run_command_with_mocked_dependencies_writes_validated_results(
 
     run_info_sheet = result_workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["sent_ok"] == 1
@@ -310,7 +324,8 @@ def test_run_command_marks_send_failures_in_output(tmp_path: Path, monkeypatch) 
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -323,7 +338,9 @@ def test_run_command_marks_send_failures_in_output(tmp_path: Path, monkeypatch) 
 
         def send_all(self, testcases):
             return [
-                EmailSendResult.failed(testcase.test_id, RuntimeError("SMTP unavailable"))
+                EmailSendResult.failed(
+                    testcase.test_id, RuntimeError("SMTP unavailable")
+                )
                 for testcase in testcases
             ]
 
@@ -334,7 +351,9 @@ def test_run_command_marks_send_failures_in_output(tmp_path: Path, monkeypatch) 
         def consume_from(self, start_time):
             return iter(())
 
-    monkeypatch.setattr("simple_e2e_tester.cli.ExpectedEventDispatcher", FailingEmailSender)
+    monkeypatch.setattr(
+        "simple_e2e_tester.cli.ExpectedEventDispatcher", FailingEmailSender
+    )
     monkeypatch.setattr("simple_e2e_tester.cli.ActualEventReader", EmptyKafkaService)
 
     run_result = runner.invoke(
@@ -355,11 +374,15 @@ def test_run_command_marks_send_failures_in_output(tmp_path: Path, monkeypatch) 
     assert len(result_files) == 1
     result_workbook = load_workbook(result_files[0])
     result_sheet = result_workbook[TEMPLATE_SHEET_NAME]
-    assert result_sheet.cell(row=3, column=result_sheet.max_column).value == "SEND_FAILED"
+    assert (
+        result_sheet.cell(row=3, column=result_sheet.max_column).value == "SEND_FAILED"
+    )
 
     run_info_sheet = result_workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["failed"] == 1
@@ -388,7 +411,8 @@ def test_run_command_supports_json_schema_with_mocked_dependencies(
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -418,7 +442,9 @@ def test_run_command_supports_json_schema_with_mocked_dependencies(
                 },
             )
 
-    monkeypatch.setattr("simple_e2e_tester.cli.ExpectedEventDispatcher", FakeEmailSender)
+    monkeypatch.setattr(
+        "simple_e2e_tester.cli.ExpectedEventDispatcher", FakeEmailSender
+    )
     monkeypatch.setattr("simple_e2e_tester.cli.ActualEventReader", FakeKafkaService)
 
     run_result = runner.invoke(
@@ -464,7 +490,8 @@ def test_run_command_validates_attachment_paths_before_sender_initialization(
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -479,7 +506,9 @@ def test_run_command_validates_attachment_paths_before_sender_initialization(
             state["sender_initialized"] = True
             raise AssertionError("email sender must not be initialized")
 
-    monkeypatch.setattr("simple_e2e_tester.cli.ExpectedEventDispatcher", GuardEmailSender)
+    monkeypatch.setattr(
+        "simple_e2e_tester.cli.ExpectedEventDispatcher", GuardEmailSender
+    )
 
     run_result = runner.invoke(
         cli,

@@ -38,9 +38,13 @@ class SynchronousSMTPClient:  # pylint: disable=too-few-public-methods
         recipients = _collect_recipients(message)
         smtp: smtplib.SMTP
         if settings.use_ssl:
-            smtp = smtplib.SMTP_SSL(settings.host, settings.port, timeout=settings.timeout_seconds)
+            smtp = smtplib.SMTP_SSL(
+                settings.host, settings.port, timeout=settings.timeout_seconds
+            )
         else:
-            smtp = smtplib.SMTP(settings.host, settings.port, timeout=settings.timeout_seconds)
+            smtp = smtplib.SMTP(
+                settings.host, settings.port, timeout=settings.timeout_seconds
+            )
         try:
             smtp.ehlo()
             if settings.use_starttls and not settings.use_ssl:
@@ -171,7 +175,10 @@ def _parse_attachments(raw_value: str, attachments_base: Path) -> list[Attachmen
     value = (raw_value or "").strip()
     if not value:
         return []
-    lines = [line.strip() for line in value.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    lines = [
+        line.strip()
+        for line in value.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    ]
     payload_lines = [line for line in lines if line]
     if not payload_lines:
         return []
@@ -258,6 +265,10 @@ def _collect_recipients(message: EmailMessage) -> list[str]:
     for header in ("To", "Cc", "Bcc"):
         if header in message:
             recipients.extend(
-                [address.strip() for address in message[header].split(",") if address.strip()]
+                [
+                    address.strip()
+                    for address in message[header].split(",")
+                    if address.strip()
+                ]
             )
     return recipients

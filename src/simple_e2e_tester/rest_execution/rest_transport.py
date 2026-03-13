@@ -10,7 +10,10 @@ import requests
 
 from simple_e2e_tester.email_sending.delivery_outcomes import SendStatus
 from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEventMessage
-from simple_e2e_tester.run_execution.run_contracts import RunArtifacts, TransportExecutionResult
+from simple_e2e_tester.run_execution.run_contracts import (
+    RunArtifacts,
+    TransportExecutionResult,
+)
 from simple_e2e_tester.schema_management.schema_models import FlattenedField
 
 
@@ -56,7 +59,8 @@ class RequestsRestRequestClient:  # pylint: disable=too-few-public-methods
                 timeout=timeout_seconds,
                 auth=(
                     (basic_auth_username, basic_auth_password)
-                    if basic_auth_username is not None and basic_auth_password is not None
+                    if basic_auth_username is not None
+                    and basic_auth_password is not None
                     else None
                 ),
             )
@@ -102,7 +106,9 @@ class RestExecutionTransport:  # pylint: disable=too-few-public-methods
             if consecutive_failures >= self._ABORT_AFTER_CONSECUTIVE_FAILURES:
                 send_status_by_test_id[testcase.test_id] = SendStatus.SKIPPED
                 continue
-            payload = _build_request_payload(testcase=testcase, defaults=rest_settings.defaults)
+            payload = _build_request_payload(
+                testcase=testcase, defaults=rest_settings.defaults
+            )
             try:
                 response_payload = self._client.request(
                     method=rest_settings.method,
@@ -112,7 +118,9 @@ class RestExecutionTransport:  # pylint: disable=too-few-public-methods
                     basic_auth_username=rest_settings.basic_auth_username,
                     basic_auth_password=rest_settings.basic_auth_password,
                 )
-                flattened = _flatten_response_payload(response_payload, artifacts.fields)
+                flattened = _flatten_response_payload(
+                    response_payload, artifacts.fields
+                )
             except RestRequestError:
                 send_status_by_test_id[testcase.test_id] = SendStatus.FAILED
                 consecutive_failures += 1
@@ -139,7 +147,9 @@ def _build_endpoint(base_url: str, path: str) -> str:
     return f"{base_url.rstrip('/')}/{path.lstrip('/')}"
 
 
-def _build_request_payload(*, testcase, defaults: Mapping[str, str]) -> dict[str, object]:
+def _build_request_payload(
+    *, testcase, defaults: Mapping[str, str]
+) -> dict[str, object]:
     return {
         "ag": defaults["ag"],
         "dokart": defaults["dokart"],
@@ -163,7 +173,9 @@ def _flatten_response_payload(
         value: object = payload
         for part in field.path.split("."):
             if not isinstance(value, Mapping) or part not in value:
-                raise RestRequestError(f"REST response is missing schema field '{field.path}'.")
+                raise RestRequestError(
+                    f"REST response is missing schema field '{field.path}'."
+                )
             value = value[part]
         flattened[field.path] = value
     return flattened

@@ -19,7 +19,10 @@ from simple_e2e_tester.configuration.runtime_settings import (
     MatchingConfig,
     SchemaConfig,
 )
-from simple_e2e_tester.email_sending.delivery_outcomes import EmailSendResult, SendStatus
+from simple_e2e_tester.email_sending.delivery_outcomes import (
+    EmailSendResult,
+    SendStatus,
+)
 from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEventMessage
 from simple_e2e_tester.kafka_consumption.actual_event_reader import ActualEventReader
 from simple_e2e_tester.matching_validation.case_evaluator import match_and_validate
@@ -27,14 +30,19 @@ from simple_e2e_tester.matching_validation.event_boundary_mappers import (
     to_actual_events,
     to_expected_events,
 )
-from simple_e2e_tester.matching_validation.matching_outcomes import MatchValidationResult
+from simple_e2e_tester.matching_validation.matching_outcomes import (
+    MatchValidationResult,
+)
 from simple_e2e_tester.results_writing import RunMetadata, write_results_workbook
 from simple_e2e_tester.run_execution.run_contracts import RunRequest
 from simple_e2e_tester.run_execution.validation_run_use_case import (
     execute_email_kafka_validation_run,
 )
 from simple_e2e_tester.schema_management import flatten_schema, load_schema_document
-from simple_e2e_tester.template_generation import TEMPLATE_SHEET_NAME, generate_template_workbook
+from simple_e2e_tester.template_generation import (
+    TEMPLATE_SHEET_NAME,
+    generate_template_workbook,
+)
 from simple_e2e_tester.template_ingestion.workbook_reader import read_template
 
 
@@ -86,7 +94,8 @@ def _write_case_sheet(
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
 
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
@@ -116,7 +125,11 @@ def test_given_enabled_expected_event_when_actual_event_matches_then_case_is_ok(
     result = match_and_validate(
         to_expected_events(testcases),
         to_actual_events(
-            [_kafka_message(sender="sender@example.com", subject="Subject-A", score=1.55)]
+            [
+                _kafka_message(
+                    sender="sender@example.com", subject="Subject-A", score=1.55
+                )
+            ]
         ),
         MatchingConfig(from_field="sender", subject_field="subject"),
         fields,
@@ -143,7 +156,11 @@ def test_given_sender_collision_when_subject_matches_one_case_then_single_case_i
     result = match_and_validate(
         to_expected_events(testcases),
         to_actual_events(
-            [_kafka_message(sender="sender@example.com", subject="Subject-B", score=1.5)]
+            [
+                _kafka_message(
+                    sender="sender@example.com", subject="Subject-B", score=1.5
+                )
+            ]
         ),
         MatchingConfig(from_field="sender", subject_field="subject"),
         fields,
@@ -192,7 +209,9 @@ def test_given_send_failure_when_writing_run_report_then_status_is_send_failed(
 
     run_info_sheet = workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["passed"] == 0
@@ -212,7 +231,11 @@ def test_given_tolerance_expression_when_actual_value_crosses_boundaries_then_on
     in_range_result = match_and_validate(
         to_expected_events(testcases),
         to_actual_events(
-            [_kafka_message(sender="sender@example.com", subject="Subject-A", score=3.30)]
+            [
+                _kafka_message(
+                    sender="sender@example.com", subject="Subject-A", score=3.30
+                )
+            ]
         ),
         MatchingConfig(from_field="sender", subject_field="subject"),
         fields,
@@ -220,7 +243,11 @@ def test_given_tolerance_expression_when_actual_value_crosses_boundaries_then_on
     out_of_range_result = match_and_validate(
         to_expected_events(testcases),
         to_actual_events(
-            [_kafka_message(sender="sender@example.com", subject="Subject-A", score=3.50)]
+            [
+                _kafka_message(
+                    sender="sender@example.com", subject="Subject-A", score=3.50
+                )
+            ]
         ),
         MatchingConfig(from_field="sender", subject_field="subject"),
         fields,
@@ -292,7 +319,9 @@ def test_given_project_init_when_command_runs_then_local_venv_is_prepared(
     def _fake_bootstrap(*, repo_root: Path) -> None:
         invoked_repo_roots.append(repo_root)
 
-    monkeypatch.setattr("simple_e2e_tester.cli.bootstrap_project_environment", _fake_bootstrap)
+    monkeypatch.setattr(
+        "simple_e2e_tester.cli.bootstrap_project_environment", _fake_bootstrap
+    )
 
     result = runner.invoke(cli, ["init"])
 
@@ -301,7 +330,9 @@ def test_given_project_init_when_command_runs_then_local_venv_is_prepared(
     assert len(invoked_repo_roots) == 1
 
 
-def test_given_synced_project_when_running_python_e2k_launcher_then_help_lists_commands() -> None:
+def test_given_synced_project_when_running_python_e2k_launcher_then_help_lists_commands() -> (
+    None
+):
     project_root = Path(__file__).resolve().parents[3]
 
     result = subprocess.run(
@@ -342,7 +373,9 @@ def test_given_python3_when_running_launcher_then_help_lists_commands() -> None:
     assert "run" in result.stdout
 
 
-def test_given_run_command_help_when_rendering_options_then_dry_run_is_supported() -> None:
+def test_given_run_command_help_when_rendering_options_then_dry_run_is_supported() -> (
+    None
+):
     runner = CliRunner()
 
     result = runner.invoke(cli, ["run", "--help"])
@@ -461,8 +494,12 @@ def test_given_all_enabled_expected_events_when_live_run_matches_then_kafka_read
         def consume_from(self, start_time):
             nonlocal trailing_events_consumed
             assert isinstance(start_time, datetime)
-            yield _kafka_message(sender="sender@example.com", subject="Subject-A", score=1.5)
-            yield _kafka_message(sender="sender@example.com", subject="Subject-B", score=1.5)
+            yield _kafka_message(
+                sender="sender@example.com", subject="Subject-A", score=1.5
+            )
+            yield _kafka_message(
+                sender="sender@example.com", subject="Subject-B", score=1.5
+            )
             for index in range(3):
                 trailing_events_consumed += 1
                 yield _kafka_message(

@@ -46,12 +46,16 @@ def _message(flattened: dict[str, object]) -> ActualEventMessage:
     )
 
 
-def _matching_config(from_field: str = "sender", subject_field: str = "subject") -> MatchingConfig:
+def _matching_config(
+    from_field: str = "sender", subject_field: str = "subject"
+) -> MatchingConfig:
     return MatchingConfig(from_field=from_field, subject_field=subject_field)
 
 
 def _fields(*entries: tuple[str, object]) -> list[FlattenedField]:
-    return [FlattenedField(path=path, definition=definition) for path, definition in entries]
+    return [
+        FlattenedField(path=path, definition=definition) for path, definition in entries
+    ]
 
 
 def _evaluate(
@@ -69,7 +73,9 @@ def _evaluate(
 
 def test_matches_unique_sender_candidate() -> None:
     testcases = [_testcase(test_id="TC-1", expected_values={"result": "OK"})]
-    messages = [_message({"sender": "sender@example.com", "subject": "Other", "result": "OK"})]
+    messages = [
+        _message({"sender": "sender@example.com", "subject": "Other", "result": "OK"})
+    ]
     schema_fields = _fields(
         ("sender", {"type": "string"}),
         ("subject", {"type": "string"}),
@@ -92,7 +98,9 @@ def test_uses_subject_to_disambiguate_sender_candidates() -> None:
         _testcase(test_id="TC-2", subject="Subject B"),
     ]
     messages = [_message({"sender": "sender@example.com", "subject": "Subject B"})]
-    schema_fields = _fields(("sender", {"type": "string"}), ("subject", {"type": "string"}))
+    schema_fields = _fields(
+        ("sender", {"type": "string"}), ("subject", {"type": "string"})
+    )
 
     result = _evaluate(testcases, messages, schema_fields)
 
@@ -107,7 +115,9 @@ def test_records_conflict_when_sender_candidates_do_not_resolve() -> None:
         _testcase(test_id="TC-2", subject="Subject B"),
     ]
     messages = [_message({"sender": "sender@example.com", "subject": "Subject Z"})]
-    schema_fields = _fields(("sender", {"type": "string"}), ("subject", {"type": "string"}))
+    schema_fields = _fields(
+        ("sender", {"type": "string"}), ("subject", {"type": "string"})
+    )
 
     result = _evaluate(testcases, messages, schema_fields)
 
@@ -121,7 +131,9 @@ def test_records_conflict_when_sender_candidates_do_not_resolve() -> None:
 def test_keeps_unmatched_actual_events() -> None:
     testcases = [_testcase(test_id="TC-1")]
     messages = [_message({"sender": "other@example.com", "subject": "Subject"})]
-    schema_fields = _fields(("sender", {"type": "string"}), ("subject", {"type": "string"}))
+    schema_fields = _fields(
+        ("sender", {"type": "string"}), ("subject", {"type": "string"})
+    )
 
     result = _evaluate(testcases, messages, schema_fields)
 
@@ -137,19 +149,31 @@ def test_allows_multiple_messages_for_same_testcase() -> None:
         _message({"sender": "sender@example.com", "subject": "one"}),
         _message({"sender": "sender@example.com", "subject": "two"}),
     ]
-    schema_fields = _fields(("sender", {"type": "string"}), ("subject", {"type": "string"}))
+    schema_fields = _fields(
+        ("sender", {"type": "string"}), ("subject", {"type": "string"})
+    )
 
     result = _evaluate(testcases, messages, schema_fields)
 
     assert len(result.matches) == 2
-    assert [match.expected_event.expected_event_id for match in result.matches] == ["TC-1", "TC-1"]
+    assert [match.expected_event.expected_event_id for match in result.matches] == [
+        "TC-1",
+        "TC-1",
+    ]
     assert result.unmatched_expected_event_ids == ()
 
 
 def test_ignores_empty_expected_values_for_validation() -> None:
-    testcase = _testcase(test_id="TC-1", expected_values={"score": None, "comment": "  "})
+    testcase = _testcase(
+        test_id="TC-1", expected_values={"score": None, "comment": "  "}
+    )
     message = _message(
-        {"sender": "sender@example.com", "subject": "Subject", "score": 1.23, "comment": "x"}
+        {
+            "sender": "sender@example.com",
+            "subject": "Subject",
+            "score": 1.23,
+            "comment": "x",
+        }
     )
     schema_fields = _fields(
         ("sender", {"type": "string"}),
@@ -190,8 +214,12 @@ def test_float_tolerance_supports_german_decimal_comma() -> None:
         ("subject", {"type": "string"}),
         ("score", {"type": "number"}),
     )
-    pass_message = _message({"sender": "sender@example.com", "subject": "Subject", "score": 3.30})
-    fail_message = _message({"sender": "sender@example.com", "subject": "Subject", "score": 3.50})
+    pass_message = _message(
+        {"sender": "sender@example.com", "subject": "Subject", "score": 3.30}
+    )
+    fail_message = _message(
+        {"sender": "sender@example.com", "subject": "Subject", "score": 3.50}
+    )
 
     pass_result = _evaluate([testcase], [pass_message], schema_fields)
     fail_result = _evaluate([testcase], [fail_message], schema_fields)
@@ -209,15 +237,27 @@ def test_float_tolerance_supports_upper_and_lower_bounds() -> None:
     upper = _testcase(test_id="TC-UP", expected_values={"score": "3,14+0,1"})
     lower = _testcase(test_id="TC-LOW", expected_values={"score": "3,14-0,1"})
 
-    upper_ok = _message({"sender": "sender@example.com", "subject": "Subject", "score": 3.24})
-    upper_fail = _message({"sender": "sender@example.com", "subject": "Subject", "score": 3.25})
-    lower_ok = _message({"sender": "sender@example.com", "subject": "Subject", "score": 3.05})
-    lower_fail = _message({"sender": "sender@example.com", "subject": "Subject", "score": 3.03})
+    upper_ok = _message(
+        {"sender": "sender@example.com", "subject": "Subject", "score": 3.24}
+    )
+    upper_fail = _message(
+        {"sender": "sender@example.com", "subject": "Subject", "score": 3.25}
+    )
+    lower_ok = _message(
+        {"sender": "sender@example.com", "subject": "Subject", "score": 3.05}
+    )
+    lower_fail = _message(
+        {"sender": "sender@example.com", "subject": "Subject", "score": 3.03}
+    )
 
     assert _evaluate([upper], [upper_ok], schema_fields).matches[0].mismatches == ()
-    assert len(_evaluate([upper], [upper_fail], schema_fields).matches[0].mismatches) == 1
+    assert (
+        len(_evaluate([upper], [upper_fail], schema_fields).matches[0].mismatches) == 1
+    )
     assert _evaluate([lower], [lower_ok], schema_fields).matches[0].mismatches == ()
-    assert len(_evaluate([lower], [lower_fail], schema_fields).matches[0].mismatches) == 1
+    assert (
+        len(_evaluate([lower], [lower_fail], schema_fields).matches[0].mismatches) == 1
+    )
 
 
 def test_exact_validation_trims_whitespace_and_compares_integers_numerically() -> None:

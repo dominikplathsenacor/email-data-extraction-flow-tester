@@ -10,7 +10,9 @@ from simple_e2e_tester.template_ingestion.testcase_models import TemplateTestCas
 from .matching_outcomes import ActualEvent, ExpectedEvent
 
 
-def to_expected_events(testcases: Sequence[TemplateTestCase]) -> tuple[ExpectedEvent, ...]:
+def to_expected_events(
+    testcases: Sequence[TemplateTestCase],
+) -> tuple[ExpectedEvent, ...]:
     """Convert template test cases into expected matching events."""
     return tuple(
         ExpectedEvent(

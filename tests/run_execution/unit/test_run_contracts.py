@@ -5,7 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from simple_e2e_tester.configuration.runtime_settings import Configuration
-from simple_e2e_tester.run_execution.run_contracts import RunArtifacts, RunOutcome, RunRequest
+from simple_e2e_tester.run_execution.run_contracts import (
+    RunArtifacts,
+    RunOutcome,
+    RunRequest,
+)
 from simple_e2e_tester.schema_management.schema_models import FlattenedField
 from simple_e2e_tester.template_ingestion.testcase_models import TemplateTestCase
 

@@ -13,15 +13,21 @@ from simple_e2e_tester.schema_management.schema_projection import (
 )
 
 
-def _schema_config(schema_type: str, text: str, source_path: Path | None = None) -> SchemaConfig:
+def _schema_config(
+    schema_type: str, text: str, source_path: Path | None = None
+) -> SchemaConfig:
     return SchemaConfig(schema_type=schema_type, text=text, source_path=source_path)
 
 
 def test_json_schema_flattening_uses_sample_schema() -> None:
-    sample_path = Path(__file__).resolve().parents[3] / "samples" / "sample-json-schema.json"
+    sample_path = (
+        Path(__file__).resolve().parents[3] / "samples" / "sample-json-schema.json"
+    )
     schema_text = sample_path.read_text(encoding="utf-8")
 
-    document = load_schema_document(_schema_config("json_schema", schema_text, sample_path))
+    document = load_schema_document(
+        _schema_config("json_schema", schema_text, sample_path)
+    )
     fields = flatten_schema(document)
     names = [field.path for field in fields]
 

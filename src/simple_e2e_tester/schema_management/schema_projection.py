@@ -31,9 +31,13 @@ def flatten_schema(document: SchemaDocument) -> list[FlattenedField]:
     seen_paths: set[str] = set()
 
     if document.schema_type == "json_schema":
-        _flatten_json_schema(document.root, prefix="", fields=fields, seen_paths=seen_paths)
+        _flatten_json_schema(
+            document.root, prefix="", fields=fields, seen_paths=seen_paths
+        )
     elif document.schema_type == "avsc":
-        _flatten_avro_schema(document.root, prefix="", fields=fields, seen_paths=seen_paths)
+        _flatten_avro_schema(
+            document.root, prefix="", fields=fields, seen_paths=seen_paths
+        )
     else:
         raise SchemaError(f"Unsupported schema type: {document.schema_type}")
 
@@ -52,7 +56,9 @@ def _flatten_json_schema(
         if isinstance(properties, Mapping):
             for key, child in properties.items():
                 child_path = key if not prefix else f"{prefix}.{key}"
-                _flatten_json_schema(child, prefix=child_path, fields=fields, seen_paths=seen_paths)
+                _flatten_json_schema(
+                    child, prefix=child_path, fields=fields, seen_paths=seen_paths
+                )
             return
         if "object" in node_types:
             _register_field(prefix, node, fields, seen_paths)
@@ -72,7 +78,9 @@ def _flatten_json_schema(
 def _json_schema_types(node: Mapping[str, Any]) -> tuple[str, ...]:
     node_type = node.get("type")
     if isinstance(node_type, list):
-        filtered = [value for value in node_type if isinstance(value, str) and value != "null"]
+        filtered = [
+            value for value in node_type if isinstance(value, str) and value != "null"
+        ]
         return tuple(filtered) if filtered else ("null",)
     if isinstance(node_type, str):
         return (node_type,)
@@ -92,11 +100,16 @@ def _flatten_avro_schema(
                 raise SchemaError("Avro field definitions must include a name.")
             child_path = field["name"] if not prefix else f"{prefix}.{field['name']}"
             _flatten_avro_schema(
-                field.get("type"), prefix=child_path, fields=fields, seen_paths=seen_paths
+                field.get("type"),
+                prefix=child_path,
+                fields=fields,
+                seen_paths=seen_paths,
             )
         return
     if prefix:
-        _register_field(prefix, definition if definition else avro_type, fields, seen_paths)
+        _register_field(
+            prefix, definition if definition else avro_type, fields, seen_paths
+        )
         return
     raise SchemaError("Avro root must be a record with named fields.")
 

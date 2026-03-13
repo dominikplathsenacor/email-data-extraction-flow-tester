@@ -209,7 +209,9 @@ def _write_single_testcase_rows(
     return inserted_rows
 
 
-def _insert_duplicate_rows(*, sheet, base_row: int, match_count: int, column_count: int) -> int:
+def _insert_duplicate_rows(
+    *, sheet, base_row: int, match_count: int, column_count: int
+) -> int:
     inserted_rows = 0
     if match_count <= 1:
         return inserted_rows
@@ -251,10 +253,13 @@ def _write_match_rows(
 
 def _ensure_header_prefix(sheet, expected_columns: Sequence[str]) -> None:
     header_values = [
-        sheet.cell(row=2, column=index).value for index in range(1, len(expected_columns) + 1)
+        sheet.cell(row=2, column=index).value
+        for index in range(1, len(expected_columns) + 1)
     ]
     if header_values != list(expected_columns):
-        raise ValueError("Template columns do not match expected event-schema-derived columns.")
+        raise ValueError(
+            "Template columns do not match expected event-schema-derived columns."
+        )
 
 
 def _write_actual_and_match_headers(
@@ -299,7 +304,9 @@ def _group_matches_by_test_id(match_result: MatchValidationResult) -> dict[str, 
 
 def _copy_row(sheet, source_row: int, target_row: int, column_count: int) -> None:
     if source_row in sheet.row_dimensions:
-        sheet.row_dimensions[target_row].height = sheet.row_dimensions[source_row].height
+        sheet.row_dimensions[target_row].height = sheet.row_dimensions[
+            source_row
+        ].height
 
     for column in range(1, column_count + 1):
         source_cell = sheet.cell(row=source_row, column=column)
@@ -328,7 +335,9 @@ def _write_actual_values(
 
 def _normalize_output_value(value: Any) -> Any:
     if isinstance(value, Mapping):
-        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
     if isinstance(value, Sequence) and not isinstance(value, str | bytes):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     return value
@@ -338,9 +347,10 @@ def _format_mismatches(mismatches: Sequence[FieldMismatch]) -> str:
     if not mismatches:
         return MatchStatus.OK.value
     blocks = [
-        f"expected: {mismatch.expected}\nactual: {mismatch.actual}" for mismatch in mismatches
+        f"{mismatch.field}\n\texpected: {mismatch.expected}\n\tactual: {mismatch.actual}"
+        for mismatch in mismatches
     ]
-    return "\n".join(blocks)
+    return "\n\n".join(blocks)
 
 
 def _resolve_unmatched_status(
@@ -416,10 +426,14 @@ def _calculate_run_counts(
     matched = len(match_result.matches)
     passed = sum(1 for item in match_result.matches if not item.mismatches)
     failed_validation = sum(1 for item in match_result.matches if item.mismatches)
-    send_failed = sum(1 for status in send_status.values() if status == SendStatus.FAILED)
+    send_failed = sum(
+        1 for status in send_status.values() if status == SendStatus.FAILED
+    )
     conflicts = len(match_result.conflicts)
     skipped_ids = {
-        test_id for test_id, status in send_status.items() if status == SendStatus.SKIPPED
+        test_id
+        for test_id, status in send_status.items()
+        if status == SendStatus.SKIPPED
     }
     not_found_ids = set(match_result.unmatched_expected_event_ids) - {
         test_id

@@ -26,13 +26,19 @@ from simple_e2e_tester.matching_validation.event_boundary_mappers import (
     to_actual_events,
     to_expected_events,
 )
-from simple_e2e_tester.matching_validation.matching_outcomes import MatchValidationResult
+from simple_e2e_tester.matching_validation.matching_outcomes import (
+    MatchValidationResult,
+)
 from simple_e2e_tester.rest_execution.rest_transport import (
     RequestsRestRequestClient,
     RestExecutionTransport,
 )
 from simple_e2e_tester.results_writing import RunMetadata, write_results_workbook
-from simple_e2e_tester.schema_management import SchemaError, flatten_schema, load_schema_document
+from simple_e2e_tester.schema_management import (
+    SchemaError,
+    flatten_schema,
+    load_schema_document,
+)
 from simple_e2e_tester.template_ingestion.workbook_reader import (
     TemplateValidationError,
     read_template,
@@ -62,7 +68,9 @@ class _RunExecution:
 class ExecutionTransport(Protocol):  # pylint: disable=too-few-public-methods
     """Transport boundary for collecting actual events for a run."""
 
-    def execute(self, *, artifacts: RunArtifacts, run_start: datetime) -> TransportExecutionResult:
+    def execute(
+        self, *, artifacts: RunArtifacts, run_start: datetime
+    ) -> TransportExecutionResult:
         """Execute one run through a concrete transport."""
 
 
@@ -80,7 +88,9 @@ class EmailKafkaExecutionTransport:  # pylint: disable=too-few-public-methods
         self._kafka_service_cls = kafka_service_cls
         self._smtp_client_factory = smtp_client_factory
 
-    def execute(self, *, artifacts: RunArtifacts, run_start: datetime) -> TransportExecutionResult:
+    def execute(
+        self, *, artifacts: RunArtifacts, run_start: datetime
+    ) -> TransportExecutionResult:
         kafka_service = _build_kafka_service_for_email_kafka(
             artifacts=artifacts,
             kafka_service_cls=self._kafka_service_cls,
@@ -92,7 +102,9 @@ class EmailKafkaExecutionTransport:  # pylint: disable=too-few-public-methods
             attachments_base=artifacts.attachments_base,
         )
         kafka_future: Future[list] | None = None
-        enabled_testcases = [testcase for testcase in artifacts.testcases if testcase.enabled]
+        enabled_testcases = [
+            testcase for testcase in artifacts.testcases if testcase.enabled
+        ]
         expected_events_for_stop = to_expected_events(enabled_testcases)
         with ThreadPoolExecutor(max_workers=1) as executor:
             if kafka_service and enabled_testcases:
@@ -106,13 +118,16 @@ class EmailKafkaExecutionTransport:  # pylint: disable=too-few-public-methods
                 )
             send_results = sender.send_all(artifacts.testcases)
             kafka_messages = kafka_future.result() if kafka_future else []
-        send_status_by_test_id = {result.test_id: result.status for result in send_results}
+        send_status_by_test_id = {
+            result.test_id: result.status for result in send_results
+        }
         sent_ok = sum(1 for result in send_results if result.status == SendStatus.SENT)
         return TransportExecutionResult(
             send_status_by_test_id=send_status_by_test_id,
             sent_ok=sent_ok,
             actual_messages=tuple(kafka_messages),
         )
+
 
 # pylint: disable=too-many-arguments,too-many-locals
 def execute_email_kafka_validation_run(
@@ -173,6 +188,8 @@ def execute_email_kafka_validation_run(
         sent_ok=execution.sent_ok,
         dry_run=request.dry_run,
     )
+
+
 # pylint: enable=too-many-arguments,too-many-locals
 
 
@@ -225,8 +242,16 @@ def _load_run_artifacts(config_path: str, input_path: str) -> RunArtifacts:
     try:
         configuration = load_configuration(config_path)
         fields = flatten_schema(load_schema_document(configuration.schema))
-        testcases = read_template(input_path, [field.path for field in fields]).testcases
-    except (ConfigurationError, SchemaError, TemplateValidationError, OSError, ValueError) as exc:
+        testcases = read_template(
+            input_path, [field.path for field in fields]
+        ).testcases
+    except (
+        ConfigurationError,
+        SchemaError,
+        TemplateValidationError,
+        OSError,
+        ValueError,
+    ) as exc:
         raise RunExecutionError(str(exc)) from exc
     return RunArtifacts(
         configuration=configuration,
@@ -238,7 +263,9 @@ def _load_run_artifacts(config_path: str, input_path: str) -> RunArtifacts:
 
 def _execute_dry_run(testcases) -> _RunExecution:
     send_status_by_test_id = {
-        testcase.test_id: SendStatus.SKIPPED for testcase in testcases if testcase.enabled
+        testcase.test_id: SendStatus.SKIPPED
+        for testcase in testcases
+        if testcase.enabled
     }
     expected_events = to_expected_events(testcases)
     match_result = MatchValidationResult(
@@ -264,7 +291,9 @@ def _execute_live_run(
     run_start: datetime,
     execution_transport: ExecutionTransport,
 ) -> _RunExecution:
-    transport_result = execution_transport.execute(artifacts=artifacts, run_start=run_start)
+    transport_result = execution_transport.execute(
+        artifacts=artifacts, run_start=run_start
+    )
     send_status_by_test_id = transport_result.send_status_by_test_id
     sent_ok = transport_result.sent_ok
     kafka_messages = list(transport_result.actual_messages)

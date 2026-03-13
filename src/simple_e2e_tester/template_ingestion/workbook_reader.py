@@ -43,12 +43,17 @@ def read_template(
     assert isinstance(sheet, Worksheet)
 
     _validate_group_headers(sheet, len(expected_field_names))
-    expected_columns = list(METADATA_COLUMNS + INPUT_COLUMNS + tuple(expected_field_names))
+    expected_columns = list(
+        METADATA_COLUMNS + INPUT_COLUMNS + tuple(expected_field_names)
+    )
     header_values = [
-        sheet.cell(row=2, column=index + 1).value for index in range(len(expected_columns))
+        sheet.cell(row=2, column=index + 1).value
+        for index in range(len(expected_columns))
     ]
     if header_values != expected_columns:
-        raise TemplateValidationError("Template columns do not match the configured event schema.")
+        raise TemplateValidationError(
+            "Template columns do not match the configured event schema."
+        )
     _ensure_no_extra_columns(sheet, len(expected_columns))
 
     header_map = {name: idx + 1 for idx, name in enumerate(expected_columns)}
@@ -60,8 +65,14 @@ def read_template(
 def _validate_group_headers(sheet, expected_field_count: int) -> None:
     metadata_label = sheet.cell(row=1, column=1).value
     input_label = sheet.cell(row=1, column=len(METADATA_COLUMNS) + 1).value
-    expected_label = sheet.cell(row=1, column=len(METADATA_COLUMNS) + len(INPUT_COLUMNS) + 1).value
-    if metadata_label != "Metadata" or input_label != "Input" or expected_label != "Expected":
+    expected_label = sheet.cell(
+        row=1, column=len(METADATA_COLUMNS) + len(INPUT_COLUMNS) + 1
+    ).value
+    if (
+        metadata_label != "Metadata"
+        or input_label != "Input"
+        or expected_label != "Expected"
+    ):
         raise TemplateValidationError("Template missing required group headers.")
     if expected_field_count == 0:
         raise TemplateValidationError("Expected fields list must not be empty.")
@@ -71,7 +82,9 @@ def _ensure_no_extra_columns(sheet, expected_count: int) -> None:
     for column in range(expected_count + 1, sheet.max_column + 1):
         value = sheet.cell(row=2, column=column).value
         if value not in (None, ""):
-            raise TemplateValidationError("Template contains unexpected additional columns.")
+            raise TemplateValidationError(
+                "Template contains unexpected additional columns."
+            )
 
 
 def _parse_rows(
@@ -122,7 +135,9 @@ def _build_testcase(
     notes = _optional_string(row_data.get("Notes"))
     from_address = _require_text(row_data["FROM"], "FROM", row_number)
     if not EMAIL_REGEX.fullmatch(from_address):
-        raise TemplateValidationError(f"Row {row_number}: invalid FROM address '{from_address}'.")
+        raise TemplateValidationError(
+            f"Row {row_number}: invalid FROM address '{from_address}'."
+        )
     subject = _require_text(row_data["SUBJECT"], "SUBJECT", row_number)
     body = _optional_string(row_data.get("BODY"))
     attachment = _optional_string(row_data.get("ATTACHMENT"))
@@ -180,5 +195,7 @@ def _is_empty(value: object) -> bool:
 
 def _require_text(value: object, column_name: str, row_number: int) -> str:
     if _is_empty(value):
-        raise TemplateValidationError(f"Row {row_number}: column '{column_name}' is required.")
+        raise TemplateValidationError(
+            f"Row {row_number}: column '{column_name}' is required."
+        )
     return str(value).strip()

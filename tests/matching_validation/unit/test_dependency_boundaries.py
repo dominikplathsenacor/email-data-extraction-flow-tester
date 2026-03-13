@@ -23,4 +23,6 @@ def test_matching_core_does_not_import_template_or_kafka_entities() -> None:
     for module_path in core_modules:
         text = module_path.read_text(encoding="utf-8")
         for fragment in forbidden_import_fragments:
-            assert fragment not in text, f"Forbidden core dependency in {module_path}: {fragment}"
+            assert (
+                fragment not in text
+            ), f"Forbidden core dependency in {module_path}: {fragment}"

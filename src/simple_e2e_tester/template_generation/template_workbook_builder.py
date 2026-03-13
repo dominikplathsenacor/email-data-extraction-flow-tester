@@ -13,7 +13,12 @@ from openpyxl.worksheet.worksheet import Worksheet
 from simple_e2e_tester.configuration.runtime_settings import SchemaConfig
 from simple_e2e_tester.schema_management.schema_models import FlattenedField
 
-from .constants import INPUT_COLUMNS, METADATA_COLUMNS, SCHEMA_SHEET_NAME, TEMPLATE_SHEET_NAME
+from .constants import (
+    INPUT_COLUMNS,
+    METADATA_COLUMNS,
+    SCHEMA_SHEET_NAME,
+    TEMPLATE_SHEET_NAME,
+)
 
 
 def generate_template_workbook(
@@ -32,7 +37,9 @@ def generate_template_workbook(
     expected_columns = [field.path for field in fields]
     all_columns = list(METADATA_COLUMNS + INPUT_COLUMNS + tuple(expected_columns))
 
-    _write_group_headers(sheet, len(METADATA_COLUMNS), len(INPUT_COLUMNS), len(expected_columns))
+    _write_group_headers(
+        sheet, len(METADATA_COLUMNS), len(INPUT_COLUMNS), len(expected_columns)
+    )
     for column_index, name in enumerate(all_columns, start=1):
         sheet.cell(row=2, column=column_index, value=name)
         sheet.column_dimensions[get_column_letter(column_index)].width = max(
@@ -46,7 +53,9 @@ def generate_template_workbook(
     workbook.save(output_path)
 
 
-def _write_group_headers(sheet, metadata_count: int, input_count: int, expected_count: int) -> None:
+def _write_group_headers(
+    sheet, metadata_count: int, input_count: int, expected_count: int
+) -> None:
     groups = [
         ("Metadata", 1, metadata_count),
         ("Input", metadata_count + 1, input_count),

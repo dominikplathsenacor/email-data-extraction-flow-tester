@@ -10,7 +10,10 @@ import pytest
 from openpyxl import load_workbook
 from simple_e2e_tester.configuration.runtime_settings import SchemaConfig
 from simple_e2e_tester.schema_management import flatten_schema, load_schema_document
-from simple_e2e_tester.template_generation import TEMPLATE_SHEET_NAME, generate_template_workbook
+from simple_e2e_tester.template_generation import (
+    TEMPLATE_SHEET_NAME,
+    generate_template_workbook,
+)
 from simple_e2e_tester.template_ingestion.testcase_models import TemplateTestCase
 from simple_e2e_tester.template_ingestion.workbook_reader import (
     TemplateValidationError,
@@ -58,7 +61,8 @@ def _write_template(tmp_path: Path) -> tuple[Path, list[str]]:
     workbook = load_workbook(output_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
 
     def set_row(row: int, values: dict[str, object]) -> None:
@@ -168,7 +172,9 @@ def test_read_template_validates_email_format(tmp_path: Path) -> None:
 def test_read_template_errors_when_expected_fields_are_empty(tmp_path: Path) -> None:
     template_path, _ = _write_template(tmp_path)
 
-    with pytest.raises(TemplateValidationError, match="Expected fields list must not be empty"):
+    with pytest.raises(
+        TemplateValidationError, match="Expected fields list must not be empty"
+    ):
         read_template(template_path, [])
 
 
@@ -190,7 +196,9 @@ def test_read_template_errors_on_unparseable_enabled_value(tmp_path: Path) -> No
     sheet.cell(row=3, column=_column_for(sheet, "Enabled")).value = "MAYBE"
     workbook.save(template_path)
 
-    with pytest.raises(TemplateValidationError, match="Unable to interpret boolean value"):
+    with pytest.raises(
+        TemplateValidationError, match="Unable to interpret boolean value"
+    ):
         read_template(template_path, field_names)
 
 
@@ -202,7 +210,9 @@ def test_read_template_errors_when_no_test_case_rows_exist(tmp_path: Path) -> No
         sheet.delete_rows(3, amount=sheet.max_row - 2)
     workbook.save(template_path)
 
-    with pytest.raises(TemplateValidationError, match="does not contain any test case rows"):
+    with pytest.raises(
+        TemplateValidationError, match="does not contain any test case rows"
+    ):
         read_template(template_path, field_names)
 
 

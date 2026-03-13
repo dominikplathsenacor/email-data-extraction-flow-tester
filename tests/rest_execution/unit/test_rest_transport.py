@@ -41,15 +41,23 @@ class _FakeRestClient:
         basic_auth_password: str | None,
     ) -> dict[str, object]:
         self.calls.append(
-            (method, url, json_payload, timeout_seconds, basic_auth_username, basic_auth_password)
+            (
+                method,
+                url,
+                json_payload,
+                timeout_seconds,
+                basic_auth_username,
+                basic_auth_password,
+            )
         )
         if self.error is not None:
             raise self.error
         return self._response_payload or {}
 
 
-def test_given_enabled_testcase_when_rest_transport_executes_then_body_is_mapped_to_dok_text(
-) -> None:
+def test_given_enabled_testcase_when_rest_transport_executes_then_body_is_mapped_to_dok_text() -> (
+    None
+):
     testcase = TemplateTestCase(
         row_number=3,
         test_id="TC-REST-1",
@@ -97,7 +105,9 @@ def test_given_enabled_testcase_when_rest_transport_executes_then_body_is_mapped
     ]
 
 
-def test_given_disabled_testcase_when_rest_transport_executes_then_request_is_skipped() -> None:
+def test_given_disabled_testcase_when_rest_transport_executes_then_request_is_skipped() -> (
+    None
+):
     testcase = TemplateTestCase(
         row_number=3,
         test_id="TC-REST-SKIP",
@@ -124,7 +134,9 @@ def test_given_disabled_testcase_when_rest_transport_executes_then_request_is_sk
     assert client.calls == []
 
 
-def test_given_request_error_when_rest_transport_executes_then_testcase_marked_failed() -> None:
+def test_given_request_error_when_rest_transport_executes_then_testcase_marked_failed() -> (
+    None
+):
     testcase = TemplateTestCase(
         row_number=3,
         test_id="TC-REST-FAIL",
@@ -151,8 +163,9 @@ def test_given_request_error_when_rest_transport_executes_then_testcase_marked_f
     assert result.actual_messages == ()
 
 
-def test_given_unexpected_client_exception_when_rest_transport_executes_then_error_is_propagated(
-) -> None:
+def test_given_unexpected_client_exception_when_rest_transport_executes_then_error_is_propagated() -> (
+    None
+):
     testcase = TemplateTestCase(
         row_number=3,
         test_id="TC-REST-ERR",
@@ -180,8 +193,9 @@ def test_given_unexpected_client_exception_when_rest_transport_executes_then_err
         raise AssertionError("expected ValueError to be propagated")
 
 
-def test_given_three_consecutive_request_failures_when_rest_transport_executes_then_it_aborts_early(
-) -> None:
+def test_given_three_consecutive_request_failures_when_rest_transport_executes_then_it_aborts_early() -> (
+    None
+):
     testcases = (
         TemplateTestCase(
             row_number=3,
@@ -251,8 +265,9 @@ def test_given_three_consecutive_request_failures_when_rest_transport_executes_t
     }
 
 
-def test_given_nested_response_when_rest_transport_executes_then_schema_fields_are_flattened(
-) -> None:
+def test_given_nested_response_when_rest_transport_executes_then_schema_fields_are_flattened() -> (
+    None
+):
     testcase = TemplateTestCase(
         row_number=3,
         test_id="TC-REST-NESTED",
@@ -309,14 +324,17 @@ def _build_run_artifacts(
     basic_auth_username: str | None = None,
     basic_auth_password: str | None = None,
 ) -> RunArtifacts:
-    schema = SchemaConfig(schema_type="json_schema", text='{"type":"object"}', source_path=None)
+    schema = SchemaConfig(
+        schema_type="json_schema", text='{"type":"object"}', source_path=None
+    )
     configuration = Configuration(
         path=Path("/tmp/config.yaml"),
         schema=schema,
         response_schema=schema,
         kafka_event_schema=None,
         transport=TransportSettings(mode="rest"),
-        matching=matching or MatchingConfig(from_field="sender", subject_field="subject"),
+        matching=matching
+        or MatchingConfig(from_field="sender", subject_field="subject"),
         smtp=SMTPSettings(
             host="smtp.example.com",
             port=25,

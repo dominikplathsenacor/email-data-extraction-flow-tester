@@ -8,10 +8,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
-from simple_e2e_tester.email_sending.delivery_outcomes import EmailSendResult, SendStatus
+from simple_e2e_tester.email_sending.delivery_outcomes import (
+    EmailSendResult,
+    SendStatus,
+)
 from simple_e2e_tester.kafka_consumption.actual_event_messages import ActualEventMessage
 from simple_e2e_tester.rest_execution.rest_transport import RestExecutionTransport
-from simple_e2e_tester.run_execution.run_contracts import RunRequest, TransportExecutionResult
+from simple_e2e_tester.run_execution.run_contracts import (
+    RunRequest,
+    TransportExecutionResult,
+)
 from simple_e2e_tester.run_execution.validation_run_use_case import (
     execute_email_kafka_validation_run,
 )
@@ -82,7 +88,8 @@ def _write_template(
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -97,7 +104,9 @@ def _write_template(
     return template_path
 
 
-def test_execute_run_use_case_dry_run_writes_results_and_returns_outcome(tmp_path: Path) -> None:
+def test_execute_run_use_case_dry_run_writes_results_and_returns_outcome(
+    tmp_path: Path,
+) -> None:
     config_path = _write_config(tmp_path, schema_type="json_schema")
     template_path = _write_template(tmp_path, config_path)
     output_dir = tmp_path / "results"
@@ -127,7 +136,8 @@ def test_given_no_enabled_test_case_when_live_run_executes_then_kafka_reader_is_
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["Enabled"]).value = False
     workbook.save(template_path)
@@ -654,5 +664,7 @@ def test_given_rest_mode_when_run_executes_then_runinfo_contains_rest_direct_top
     )
 
     run_info_sheet = load_workbook(outcome.output_path)["RunInfo"]
-    run_info = {row[0].value: row[1].value for row in run_info_sheet.iter_rows(min_row=2)}
+    run_info = {
+        row[0].value: row[1].value for row in run_info_sheet.iter_rows(min_row=2)
+    }
     assert run_info["kafka_topic"] == "REST_DIRECT"

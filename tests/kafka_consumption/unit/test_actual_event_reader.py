@@ -155,7 +155,11 @@ def _encode_string_array(values: list[str]) -> bytes:
 
 
 def _encode_avro_payload(sender: str, subject: str, klasse_values: list[str]) -> bytes:
-    return _encode_string(sender) + _encode_string(subject) + _encode_string_array(klasse_values)
+    return (
+        _encode_string(sender)
+        + _encode_string(subject)
+        + _encode_string_array(klasse_values)
+    )
 
 
 def test_kafka_consumer_yields_messages_after_timestamp() -> None:
@@ -204,7 +208,9 @@ def test_kafka_consumer_stops_after_timeout() -> None:
 def test_kafka_consumer_raises_on_decode_error() -> None:
     now = datetime.now(UTC)
     records = [
-        FakeRecord(_encode_string("only-one-field"), timestamp=now + timedelta(seconds=1)),
+        FakeRecord(
+            _encode_string("only-one-field"), timestamp=now + timedelta(seconds=1)
+        ),
     ]
     consumer = FakeConsumer(records)
     service = ActualEventReader(
@@ -222,7 +228,11 @@ def test_kafka_consumer_accepts_confluent_wire_header() -> None:
     now = datetime.now(UTC)
     payload = _encode_avro_payload("sender", "subject", ["A"])
     schema_registry_header = b"\x00" + struct.pack(">I", 7)
-    records = [FakeRecord(schema_registry_header + payload, timestamp=now + timedelta(seconds=1))]
+    records = [
+        FakeRecord(
+            schema_registry_header + payload, timestamp=now + timedelta(seconds=1)
+        )
+    ]
     service = ActualEventReader(
         kafka_settings=_kafka_settings(),
         schema_fields=_flattened_fields(),
@@ -421,7 +431,9 @@ def test_kafka_consumer_decodes_invalid_utf8_key_as_none() -> None:
     assert messages[0].key is None
 
 
-def test_create_consumer_uses_security_and_default_group(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_consumer_uses_security_and_default_group(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, object] = {}
 
     class FakeConfluentConsumer:

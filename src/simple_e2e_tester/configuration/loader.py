@@ -30,7 +30,9 @@ class ConfigurationError(Exception):
     """Raised when the configuration file is invalid."""
 
 
-def load_configuration(config_path: Path | str) -> Configuration:  # pylint: disable=too-many-locals
+def load_configuration(
+    config_path: Path | str,
+) -> Configuration:  # pylint: disable=too-many-locals
     """Load and validate the configuration file."""
     path = Path(config_path)
     if not path.exists():
@@ -60,7 +62,9 @@ def load_configuration(config_path: Path | str) -> Configuration:  # pylint: dis
         raise ConfigurationError(str(exc)) from exc
     field_names = {field.path for field in flattened_fields}
 
-    matching = _parse_matching_section(parsed.get("matching"), available_fields=field_names)
+    matching = _parse_matching_section(
+        parsed.get("matching"), available_fields=field_names
+    )
     smtp = _parse_smtp_section(parsed.get("smtp"))
     mail = _parse_mail_section(parsed.get("mail"))
     kafka = _parse_kafka_section(parsed.get("kafka"), transport)
@@ -107,12 +111,16 @@ def _parse_schema_section(
     rest_raw = section.get("rest_response")
     kafka_raw = section.get("kafka_event")
     rest_schema = (
-        _parse_single_schema_config(_require_mapping(rest_raw, "schema.rest_response"), base_path)
+        _parse_single_schema_config(
+            _require_mapping(rest_raw, "schema.rest_response"), base_path
+        )
         if rest_raw is not None
         else None
     )
     kafka_schema = (
-        _parse_single_schema_config(_require_mapping(kafka_raw, "schema.kafka_event"), base_path)
+        _parse_single_schema_config(
+            _require_mapping(kafka_raw, "schema.kafka_event"), base_path
+        )
         if kafka_raw is not None
         else None
     )
@@ -151,18 +159,24 @@ def _parse_single_schema_config(value: Any, base_path: Path) -> SchemaConfig:
 def _parse_transport_section(value: Any, schema_value: Any) -> TransportSettings:
     if value is None:
         schema_mapping = schema_value if isinstance(schema_value, Mapping) else {}
-        has_legacy_schema = any(schema_mapping.get(key) for key in ("avsc", "json_schema"))
+        has_legacy_schema = any(
+            schema_mapping.get(key) for key in ("avsc", "json_schema")
+        )
         if has_legacy_schema:
             return TransportSettings(mode="email_kafka")
         return TransportSettings(mode="rest")
     section = _require_mapping(value, "transport")
     mode = _require_non_empty_string(section.get("mode"), "transport.mode").lower()
     if mode not in {"rest", "email_kafka"}:
-        raise ConfigurationError("transport.mode must be either 'rest' or 'email_kafka'.")
+        raise ConfigurationError(
+            "transport.mode must be either 'rest' or 'email_kafka'."
+        )
     return TransportSettings(mode=mode)
 
 
-def _load_schema_definition(definition: Any, base_path: Path) -> tuple[str, Path | None]:
+def _load_schema_definition(
+    definition: Any, base_path: Path
+) -> tuple[str, Path | None]:
     if isinstance(definition, str):
         return definition, None
     mapping = _require_mapping(definition, "schema definition")
@@ -185,9 +199,13 @@ def _load_schema_definition(definition: Any, base_path: Path) -> tuple[str, Path
     raise ConfigurationError("Schema definition requires either inline or path.")
 
 
-def _parse_matching_section(value: Any, *, available_fields: set[str]) -> MatchingConfig:
+def _parse_matching_section(
+    value: Any, *, available_fields: set[str]
+) -> MatchingConfig:
     section = _require_mapping(value, "matching")
-    from_field = _require_non_empty_string(section.get("from_field"), "matching.from_field")
+    from_field = _require_non_empty_string(
+        section.get("from_field"), "matching.from_field"
+    )
     subject_field = _require_non_empty_string(
         section.get("subject_field"), "matching.subject_field"
     )
@@ -196,7 +214,9 @@ def _parse_matching_section(value: Any, *, available_fields: set[str]) -> Matchi
         (subject_field, "matching.subject_field"),
     ):
         if field_name not in available_fields:
-            raise ConfigurationError(f"{label} '{field_name}' does not exist in schema.")
+            raise ConfigurationError(
+                f"{label} '{field_name}' does not exist in schema."
+            )
     return MatchingConfig(from_field=from_field, subject_field=subject_field)
 
 
@@ -212,7 +232,9 @@ def _parse_smtp_section(value: Any) -> SMTPSettings:
     timeout_seconds = _require_positive_int(
         section.get("timeout_seconds", 30), "smtp.timeout_seconds"
     )
-    parallelism = _require_positive_int(section.get("parallelism", 4), "smtp.parallelism")
+    parallelism = _require_positive_int(
+        section.get("parallelism", 4), "smtp.parallelism"
+    )
     return SMTPSettings(
         host=host,
         port=port,
@@ -274,7 +296,9 @@ def _parse_kafka_section(value: Any, transport: TransportSettings) -> KafkaSetti
     )
 
 
-def _parse_rest_section(value: Any, transport: TransportSettings) -> RestSettings | None:
+def _parse_rest_section(
+    value: Any, transport: TransportSettings
+) -> RestSettings | None:
     if value is None:
         if transport.mode == "rest":
             raise ConfigurationError("Configuration section 'rest' is required.")
@@ -296,7 +320,9 @@ def _parse_rest_section(value: Any, transport: TransportSettings) -> RestSetting
         key: _require_non_empty_string(defaults.get(key), f"rest.defaults.{key}")
         for key in defaults_required
     }
-    method = _require_non_empty_string(section.get("method", "POST"), "rest.method").upper()
+    method = _require_non_empty_string(
+        section.get("method", "POST"), "rest.method"
+    ).upper()
     return RestSettings(
         base_url=_require_non_empty_string(section.get("base_url"), "rest.base_url"),
         path=_require_non_empty_string(section.get("path"), "rest.path"),
@@ -304,7 +330,9 @@ def _parse_rest_section(value: Any, transport: TransportSettings) -> RestSetting
         timeout_seconds=_require_positive_int(
             section.get("timeout_seconds", 30), "rest.timeout_seconds"
         ),
-        retry_count=_require_non_negative_int(section.get("retry_count", 2), "rest.retry_count"),
+        retry_count=_require_non_negative_int(
+            section.get("retry_count", 2), "rest.retry_count"
+        ),
         retry_backoff_ms=_require_non_negative_int(
             section.get("retry_backoff_ms", 250), "rest.retry_backoff_ms"
         ),
@@ -322,8 +350,12 @@ def _parse_rest_auth_section(value: Any) -> tuple[str | None, str | None]:
     if basic is None:
         return None, None
     basic_section = _require_mapping(basic, "rest.auth.basic")
-    username = _optional_string(basic_section.get("username"), "rest.auth.basic.username")
-    password = _optional_string(basic_section.get("password"), "rest.auth.basic.password")
+    username = _optional_string(
+        basic_section.get("username"), "rest.auth.basic.username"
+    )
+    password = _optional_string(
+        basic_section.get("password"), "rest.auth.basic.password"
+    )
     if (username is None) != (password is None):
         raise ConfigurationError(
             "rest.auth.basic.username and rest.auth.basic.password must be set together."
@@ -340,14 +372,20 @@ def _normalize_bootstrap_servers(value: Any) -> tuple[str, ...]:
     elif isinstance(value, Sequence):
         for item in value:
             if not isinstance(item, str):
-                raise ConfigurationError("kafka.bootstrap_servers entries must be strings.")
+                raise ConfigurationError(
+                    "kafka.bootstrap_servers entries must be strings."
+                )
             stripped = item.strip()
             if stripped:
                 servers.append(stripped)
     else:
-        raise ConfigurationError("kafka.bootstrap_servers must be a string or list of strings.")
+        raise ConfigurationError(
+            "kafka.bootstrap_servers must be a string or list of strings."
+        )
     if not servers:
-        raise ConfigurationError("kafka.bootstrap_servers must contain at least one server.")
+        raise ConfigurationError(
+            "kafka.bootstrap_servers must contain at least one server."
+        )
     return tuple(servers)
 
 

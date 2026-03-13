@@ -7,7 +7,10 @@ from pathlib import Path
 from openpyxl import load_workbook
 from simple_e2e_tester.configuration.runtime_settings import SchemaConfig
 from simple_e2e_tester.schema_management import flatten_schema, load_schema_document
-from simple_e2e_tester.template_generation import TEMPLATE_SHEET_NAME, generate_template_workbook
+from simple_e2e_tester.template_generation import (
+    TEMPLATE_SHEET_NAME,
+    generate_template_workbook,
+)
 from simple_e2e_tester.template_ingestion.workbook_reader import read_template
 
 
@@ -19,7 +22,9 @@ def test_read_sample_schema_template(tmp_path: Path) -> None:
         .joinpath("samples", "sample-json-schema.json")
         .read_text(encoding="utf-8")
     )
-    schema_config = SchemaConfig(schema_type="json_schema", text=schema_text, source_path=None)
+    schema_config = SchemaConfig(
+        schema_type="json_schema", text=schema_text, source_path=None
+    )
     fields = flatten_schema(load_schema_document(schema_config))
 
     output_path = tmp_path / "sample-template.xlsx"
@@ -28,7 +33,8 @@ def test_read_sample_schema_template(tmp_path: Path) -> None:
     workbook = load_workbook(output_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "SAMPLE-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sample@example.com"

@@ -6,7 +6,10 @@ import json
 from pathlib import Path
 
 import pytest
-from simple_e2e_tester.configuration.loader import ConfigurationError, load_configuration
+from simple_e2e_tester.configuration.loader import (
+    ConfigurationError,
+    load_configuration,
+)
 
 
 def _write_file(path: Path, contents: str) -> Path:
@@ -138,7 +141,9 @@ def test_loads_json_configuration_with_schema_path(tmp_path: Path) -> None:
         },
     ],
 )
-def test_errors_when_schema_definition_invalid(tmp_path: Path, schema_section: dict) -> None:
+def test_errors_when_schema_definition_invalid(
+    tmp_path: Path, schema_section: dict
+) -> None:
     config = {
         "schema": schema_section,
         "matching": {
@@ -198,7 +203,9 @@ kafka:
         {"from_field": " ", "subject_field": "subject"},
     ],
 )
-def test_errors_when_matching_fields_missing(tmp_path: Path, matching_section: dict) -> None:
+def test_errors_when_matching_fields_missing(
+    tmp_path: Path, matching_section: dict
+) -> None:
     config = {
         "schema": {"avsc": {"inline": "{}"}},
         "matching": matching_section,
@@ -249,7 +256,9 @@ kafka:
 def test_errors_when_configuration_root_is_not_mapping(tmp_path: Path) -> None:
     config_path = _write_file(tmp_path / "config.yaml", "[]")
 
-    with pytest.raises(ConfigurationError, match="Configuration root must be a mapping"):
+    with pytest.raises(
+        ConfigurationError, match="Configuration root must be a mapping"
+    ):
         load_configuration(config_path)
 
 
@@ -480,7 +489,9 @@ def test_errors_when_rest_transport_selected_without_rest_response_schema(
         load_configuration(config_path)
 
 
-def test_defaults_transport_mode_to_rest_when_transport_section_missing(tmp_path: Path) -> None:
+def test_defaults_transport_mode_to_rest_when_transport_section_missing(
+    tmp_path: Path,
+) -> None:
     config = {
         "schema": {
             "rest_response": {

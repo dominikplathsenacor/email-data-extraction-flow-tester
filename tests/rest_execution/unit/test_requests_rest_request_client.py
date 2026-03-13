@@ -11,7 +11,9 @@ from simple_e2e_tester.rest_execution.rest_transport import (
 
 
 class _FakeResponse:
-    def __init__(self, payload: object, *, status_error: Exception | None = None) -> None:
+    def __init__(
+        self, payload: object, *, status_error: Exception | None = None
+    ) -> None:
         self._payload = payload
         self._status_error = status_error
 
@@ -51,7 +53,9 @@ def test_given_valid_json_object_when_request_client_calls_rest_then_mapping_ret
 def test_given_non_object_json_when_request_client_calls_rest_then_error_raised(
     monkeypatch,
 ) -> None:
-    monkeypatch.setattr("requests.request", lambda **kwargs: _FakeResponse(["not-an-object"]))
+    monkeypatch.setattr(
+        "requests.request", lambda **kwargs: _FakeResponse(["not-an-object"])
+    )
 
     with pytest.raises(RestRequestError, match="root must be a JSON object"):
         RequestsRestRequestClient().request(

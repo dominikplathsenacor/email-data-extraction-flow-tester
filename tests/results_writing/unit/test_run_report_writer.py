@@ -20,9 +20,15 @@ from simple_e2e_tester.matching_validation.matching_outcomes import (
     MatchValidationResult,
     ValidatedMatch,
 )
-from simple_e2e_tester.results_writing.run_report_writer import RunMetadata, write_results_workbook
+from simple_e2e_tester.results_writing.run_report_writer import (
+    RunMetadata,
+    write_results_workbook,
+)
 from simple_e2e_tester.schema_management import flatten_schema, load_schema_document
-from simple_e2e_tester.template_generation import TEMPLATE_SHEET_NAME, generate_template_workbook
+from simple_e2e_tester.template_generation import (
+    TEMPLATE_SHEET_NAME,
+    generate_template_workbook,
+)
 from simple_e2e_tester.template_ingestion.workbook_reader import read_template
 
 
@@ -51,7 +57,8 @@ def _prepare_template(tmp_path: Path) -> tuple[Path, list]:
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
 
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
@@ -86,12 +93,16 @@ def test_writes_output_with_actual_match_and_duplicated_rows(tmp_path: Path) -> 
 
     first_match = ValidatedMatch(
         expected_event=expected_tc1,
-        actual_event=to_actual_events([_message("sender@example.com", "Subject-1", 1.55)])[0],
+        actual_event=to_actual_events(
+            [_message("sender@example.com", "Subject-1", 1.55)]
+        )[0],
         mismatches=(),
     )
     second_match = ValidatedMatch(
         expected_event=expected_tc1,
-        actual_event=to_actual_events([_message("sender@example.com", "Subject-1", 1.80)])[0],
+        actual_event=to_actual_events(
+            [_message("sender@example.com", "Subject-1", 1.80)]
+        )[0],
         mismatches=(FieldMismatch(field="score", expected="1,50+-0,1", actual="1.8"),),
     )
     result = MatchValidationResult(
@@ -143,7 +154,9 @@ def test_writes_output_with_actual_match_and_duplicated_rows(tmp_path: Path) -> 
     assert "RunInfo" in workbook.sheetnames
     run_info_sheet = workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["kafka_topic"] == "topic-a"
@@ -229,7 +242,9 @@ def test_not_found_excludes_skipped_rows(tmp_path: Path) -> None:
 
     run_info_sheet = workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["not_found"] == 0

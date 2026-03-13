@@ -16,7 +16,10 @@ from simple_e2e_tester.run_execution.validation_run_use_case import (
     execute_email_kafka_validation_run,
 )
 from simple_e2e_tester.schema_management import flatten_schema, load_schema_document
-from simple_e2e_tester.template_generation import TEMPLATE_SHEET_NAME, generate_template_workbook
+from simple_e2e_tester.template_generation import (
+    TEMPLATE_SHEET_NAME,
+    generate_template_workbook,
+)
 
 
 class _RestHandler(BaseHTTPRequestHandler):
@@ -37,7 +40,9 @@ class _RestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(encoded)
 
-    def log_message(self, format: str, *args) -> None:  # pylint: disable=redefined-builtin
+    def log_message(
+        self, format: str, *args
+    ) -> None:  # pylint: disable=redefined-builtin
         del format, args
 
 
@@ -90,7 +95,9 @@ def test_given_rest_mode_when_run_executes_then_real_http_roundtrip_is_validated
     assert testcase_sheet.cell(row=3, column=testcase_sheet.max_column).value == "OK"
 
     run_info_sheet = workbook["RunInfo"]
-    run_info = {row[0].value: row[1].value for row in run_info_sheet.iter_rows(min_row=2)}
+    run_info = {
+        row[0].value: row[1].value for row in run_info_sheet.iter_rows(min_row=2)
+    }
     assert run_info["kafka_topic"] == "REST_DIRECT"
 
 
@@ -137,7 +144,10 @@ def _write_template(tmp_path: Path, config_path: Path) -> Path:
 
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
-    headers = {sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)}
+    headers = {
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
+    }
     sheet.cell(row=3, column=headers["ID"]).value = "TC-REST-1"
     sheet.cell(row=3, column=headers["FROM"]).value = "sender@example.com"
     sheet.cell(row=3, column=headers["SUBJECT"]).value = "Subject-1"

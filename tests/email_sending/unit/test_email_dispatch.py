@@ -66,7 +66,9 @@ def test_compose_email_creates_plain_and_html_parts(tmp_path: Path) -> None:
     assert message["To"] == mail_settings.to_address
     assert message["From"] == testcase.from_address
     assert message["Subject"] == testcase.subject
-    payloads = {part.get_content_type(): _part_text(part) for part in message.iter_parts()}
+    payloads = {
+        part.get_content_type(): _part_text(part) for part in message.iter_parts()
+    }
     assert payloads["text/plain"].strip() == "Plain text body"
     assert "Plain text body" in payloads["text/html"]
 
@@ -161,7 +163,9 @@ def test_compose_email_treats_dot_suffix_text_as_text_payload_without_path_prefi
 
 
 class FakeSMTPClient:
-    def __init__(self, fail_for: Sequence[str] | None = None, delay: float = 0.0) -> None:
+    def __init__(
+        self, fail_for: Sequence[str] | None = None, delay: float = 0.0
+    ) -> None:
         self.fail_for = set(fail_for or [])
         self.delay = delay
         self.sent_messages: list[str] = []
@@ -216,7 +220,8 @@ def test_email_sender_parallelism_follows_configured_value(tmp_path: Path) -> No
     configured_parallelism = 3
     smtp_settings = _smtp_settings(parallelism=configured_parallelism)
     testcases = [
-        _testcase(test_id=f"TC-{index}", subject=f"Subject-{index}") for index in range(1, 25)
+        _testcase(test_id=f"TC-{index}", subject=f"Subject-{index}")
+        for index in range(1, 25)
     ]
     fake_client = FakeSMTPClient(delay=0.05)
     sender = ExpectedEventDispatcher(
@@ -292,7 +297,9 @@ def test_synchronous_smtp_client_uses_starttls_login_and_all_recipients(
         sessions.append(session)
         return session
 
-    monkeypatch.setattr("simple_e2e_tester.email_sending.email_dispatch.smtplib.SMTP", smtp_factory)
+    monkeypatch.setattr(
+        "simple_e2e_tester.email_sending.email_dispatch.smtplib.SMTP", smtp_factory
+    )
     mail_settings = MailSettings(
         to_address="qa@example.com",
         cc=("copy@example.com",),
@@ -300,7 +307,9 @@ def test_synchronous_smtp_client_uses_starttls_login_and_all_recipients(
     )
     message = compose_email(_testcase(), mail_settings, attachments_base=tmp_path)
 
-    SynchronousSMTPClient().send_message(_smtp_settings(use_ssl=False, use_starttls=True), message)
+    SynchronousSMTPClient().send_message(
+        _smtp_settings(use_ssl=False, use_starttls=True), message
+    )
 
     assert len(sessions) == 1
     session = sessions[0]
@@ -315,7 +324,11 @@ def test_synchronous_smtp_client_uses_starttls_login_and_all_recipients(
         "send_message",
         "quit",
     ]
-    assert session.sent_to_addrs == ["qa@example.com", "copy@example.com", "hidden@example.com"]
+    assert session.sent_to_addrs == [
+        "qa@example.com",
+        "copy@example.com",
+        "hidden@example.com",
+    ]
     assert session.sent_message is not None
     assert session.sent_message["X-Test-Id"] == "TC-1"
 
@@ -331,12 +344,20 @@ def test_synchronous_smtp_client_uses_ssl_without_starttls(
         return session
 
     monkeypatch.setattr(
-        "simple_e2e_tester.email_sending.email_dispatch.smtplib.SMTP_SSL", smtp_ssl_factory
+        "simple_e2e_tester.email_sending.email_dispatch.smtplib.SMTP_SSL",
+        smtp_ssl_factory,
     )
     message = compose_email(_testcase(), _mail_settings(), attachments_base=tmp_path)
 
-    SynchronousSMTPClient().send_message(_smtp_settings(use_ssl=True, use_starttls=True), message)
+    SynchronousSMTPClient().send_message(
+        _smtp_settings(use_ssl=True, use_starttls=True), message
+    )
 
     assert len(sessions) == 1
     session = sessions[0]
-    assert session.actions == ["ehlo", ("login", "user", "secret"), "send_message", "quit"]
+    assert session.actions == [
+        "ehlo",
+        ("login", "user", "secret"),
+        "send_message",
+        "quit",
+    ]

@@ -23,7 +23,9 @@ from .matching_outcomes import (
 )
 
 _NUMBER_PATTERN = r"[+-]?\d+(?:[.,]\d+)?"
-_PLUS_MINUS_PATTERN = re.compile(rf"^\s*({_NUMBER_PATTERN})\s*\+\-\s*({_NUMBER_PATTERN})\s*$")
+_PLUS_MINUS_PATTERN = re.compile(
+    rf"^\s*({_NUMBER_PATTERN})\s*\+\-\s*({_NUMBER_PATTERN})\s*$"
+)
 _PLUS_PATTERN = re.compile(rf"^\s*({_NUMBER_PATTERN})\s*\+\s*({_NUMBER_PATTERN})\s*$")
 _MINUS_PATTERN = re.compile(rf"^\s*({_NUMBER_PATTERN})\s*-\s*({_NUMBER_PATTERN})\s*$")
 
@@ -66,7 +68,9 @@ def match_and_validate(
         from_field=matching_config.from_field,
         subject_field=matching_config.subject_field,
         field_kinds=_infer_field_kinds(schema_fields),
-        expected_events_by_sender=_group_expected_events_by_sender(enabled_expected_events),
+        expected_events_by_sender=_group_expected_events_by_sender(
+            enabled_expected_events
+        ),
     )
     state = _MatchingState(
         matches=[],
@@ -153,7 +157,9 @@ def _group_expected_events_by_sender(
 ) -> dict[str, list[ExpectedEvent]]:
     grouped: dict[str, list[ExpectedEvent]] = {}
     for expected_event in expected_events:
-        grouped.setdefault(_normalize_sender(expected_event.sender), []).append(expected_event)
+        grouped.setdefault(_normalize_sender(expected_event.sender), []).append(
+            expected_event
+        )
     return grouped
 
 
@@ -209,9 +215,13 @@ def _validate_expected_values(
     return mismatches
 
 
-def _values_match(expected_value: object, actual_value: object, kind: _FieldKind) -> bool:
+def _values_match(
+    expected_value: object, actual_value: object, kind: _FieldKind
+) -> bool:
     if kind == _FieldKind.FLOAT:
-        tolerance_match = _match_float_tolerance_expression(expected_value, actual_value)
+        tolerance_match = _match_float_tolerance_expression(
+            expected_value, actual_value
+        )
         if tolerance_match is not None:
             return tolerance_match
         expected_number = _parse_decimal(expected_value)
@@ -225,10 +235,14 @@ def _values_match(expected_value: object, actual_value: object, kind: _FieldKind
         if expected_number is not None and actual_number is not None:
             return expected_number == actual_number
 
-    return _normalize_comparison_value(expected_value) == _normalize_comparison_value(actual_value)
+    return _normalize_comparison_value(expected_value) == _normalize_comparison_value(
+        actual_value
+    )
 
 
-def _match_float_tolerance_expression(expected_value: object, actual_value: object) -> bool | None:
+def _match_float_tolerance_expression(
+    expected_value: object, actual_value: object
+) -> bool | None:
     if not isinstance(expected_value, str):
         return None
     actual_number = _parse_decimal(actual_value)
@@ -274,7 +288,9 @@ def _parse_tolerance_parts(
     return _parse_decimal(center_raw), _parse_decimal(tolerance_raw)
 
 
-def _infer_field_kinds(schema_fields: Sequence[FlattenedField]) -> dict[str, _FieldKind]:
+def _infer_field_kinds(
+    schema_fields: Sequence[FlattenedField],
+) -> dict[str, _FieldKind]:
     return {field.path: _infer_field_kind(field.definition) for field in schema_fields}
 
 
@@ -361,7 +377,9 @@ def _normalize_comparison_value(value: object) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, Mapping):
-        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
     if isinstance(value, Sequence) and not isinstance(value, str | bytes):
         return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
     return str(value)

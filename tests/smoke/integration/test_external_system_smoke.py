@@ -142,7 +142,8 @@ def test_run_smoke_mocks_smtp_and_kafka_and_validates_requests_and_results(
     workbook = load_workbook(template_path)
     sheet = workbook[TEMPLATE_SHEET_NAME]
     header_map = {
-        sheet.cell(row=2, column=col).value: col for col in range(1, sheet.max_column + 1)
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
     }
     sheet.cell(row=3, column=header_map["ID"]).value = "TC-1"
     sheet.cell(row=3, column=header_map["FROM"]).value = "sender@example.com"
@@ -197,7 +198,9 @@ def test_run_smoke_mocks_smtp_and_kafka_and_validates_requests_and_results(
     assert smtp_session.sent_message["Subject"] == "Subject-1"
     assert smtp_session.sent_message["X-Test-Id"] == "TC-1"
 
-    kafka_settings = cast(KafkaSettings, _FakeKafkaService.last_kwargs["kafka_settings"])
+    kafka_settings = cast(
+        KafkaSettings, _FakeKafkaService.last_kwargs["kafka_settings"]
+    )
     assert kafka_settings.topic == "result-topic"
     assert kafka_settings.security["security.protocol"] == "SASL_SSL"
     assert kafka_settings.security["sasl.username"] == "kafka-user"
@@ -212,7 +215,9 @@ def test_run_smoke_mocks_smtp_and_kafka_and_validates_requests_and_results(
 
     run_info_sheet = result_workbook["RunInfo"]
     run_info = {
-        run_info_sheet.cell(row=row, column=1).value: run_info_sheet.cell(row=row, column=2).value
+        run_info_sheet.cell(row=row, column=1)
+        .value: run_info_sheet.cell(row=row, column=2)
+        .value
         for row in range(1, 20)
     }
     assert run_info["sent_ok"] == 1
