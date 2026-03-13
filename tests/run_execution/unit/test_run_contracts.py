@@ -40,6 +40,7 @@ def test_run_artifacts_groups_configuration_fields_and_cases() -> None:
     artifacts = RunArtifacts(
         configuration=Configuration.__new__(Configuration),
         fields=(FlattenedField(path="sender", definition={"type": "string"}),),
+        validation_field_names=("sender",),
         testcases=(TemplateTestCase.__new__(TemplateTestCase),),
         attachments_base=Path("/tmp"),
     )

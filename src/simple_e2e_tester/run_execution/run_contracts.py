@@ -37,6 +37,7 @@ class RunArtifacts:
 
     configuration: Configuration
     fields: tuple[FlattenedField, ...]
+    validation_field_names: tuple[str, ...]
     testcases: tuple[TemplateTestCase, ...]
     attachments_base: Path
 

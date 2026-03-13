@@ -23,6 +23,9 @@ def test_build_placeholder_configuration_contains_all_supported_sections() -> No
     assert "kafka_event:" in scaffold
     assert "rest_response:" in scaffold
     assert "matching:" in scaffold
+    assert "validation:" in scaffold
+    assert "field_names:" in scaffold
+    assert "all schema-derived fields are validated" in scaffold
     assert "smtp:" in scaffold
     assert "mail:" in scaffold
     assert "kafka:" in scaffold

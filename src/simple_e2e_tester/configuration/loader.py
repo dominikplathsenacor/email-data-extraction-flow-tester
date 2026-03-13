@@ -23,6 +23,7 @@ from .runtime_settings import (
     SchemaConfig,
     SMTPSettings,
     TransportSettings,
+    ValidationSettings,
 )
 
 
@@ -65,6 +66,9 @@ def load_configuration(
     matching = _parse_matching_section(
         parsed.get("matching"), available_fields=field_names
     )
+    validation = _parse_validation_section(
+        parsed.get("validation"), available_fields=field_names
+    )
     smtp = _parse_smtp_section(parsed.get("smtp"))
     mail = _parse_mail_section(parsed.get("mail"))
     kafka = _parse_kafka_section(parsed.get("kafka"), transport)
@@ -77,6 +81,7 @@ def load_configuration(
         kafka_event_schema=kafka_event_schema,
         transport=transport,
         matching=matching,
+        validation=validation,
         smtp=smtp,
         mail=mail,
         kafka=kafka,
@@ -218,6 +223,44 @@ def _parse_matching_section(
                 f"{label} '{field_name}' does not exist in schema."
             )
     return MatchingConfig(from_field=from_field, subject_field=subject_field)
+
+
+def _parse_validation_section(
+    value: Any, *, available_fields: set[str]
+) -> ValidationSettings:
+    if value is None:
+        return ValidationSettings(field_names=None)
+    section = _require_mapping(value, "validation")
+    raw_field_names = section.get("field_names")
+    if raw_field_names is None:
+        return ValidationSettings(field_names=None)
+    if not isinstance(raw_field_names, Sequence) or isinstance(
+        raw_field_names, str | bytes
+    ):
+        raise ConfigurationError("validation.field_names must be a list of strings.")
+
+    field_names: list[str] = []
+    for index, field_name in enumerate(raw_field_names):
+        if not isinstance(field_name, str):
+            raise ConfigurationError(
+                f"validation.field_names[{index}] must be a string."
+            )
+        stripped = field_name.strip()
+        if not stripped:
+            raise ConfigurationError(
+                f"validation.field_names[{index}] must not be empty."
+            )
+        if stripped not in available_fields:
+            raise ConfigurationError(
+                f"validation.field_names[{index}] '{stripped}' does not exist in schema."
+            )
+        field_names.append(stripped)
+
+    if not field_names:
+        raise ConfigurationError(
+            "validation.field_names must contain at least one field."
+        )
+    return ValidationSettings(field_names=tuple(field_names))
 
 
 def _parse_smtp_section(value: Any) -> SMTPSettings:

@@ -253,9 +253,13 @@ def _load_run_artifacts(config_path: str, input_path: str) -> RunArtifacts:
         ValueError,
     ) as exc:
         raise RunExecutionError(str(exc)) from exc
+    validation_field_names = configuration.validation.field_names or tuple(
+        field.path for field in fields
+    )
     return RunArtifacts(
         configuration=configuration,
         fields=tuple(fields),
+        validation_field_names=validation_field_names,
         testcases=testcases,
         attachments_base=Path(input_path).resolve().parent,
     )
@@ -309,6 +313,7 @@ def _execute_live_run(
         actual_events,
         artifacts.configuration.matching,
         artifacts.fields,
+        artifacts.validation_field_names,
     )
     return _RunExecution(
         send_status_by_test_id=send_status_by_test_id,

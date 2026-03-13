@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from enum import Enum
@@ -44,6 +44,7 @@ class _MatchingContext:
     subject_field: str
     field_kinds: Mapping[str, _FieldKind]
     expected_events_by_sender: Mapping[str, Sequence[ExpectedEvent]]
+    validation_field_names: Collection[str] | None
 
 
 @dataclass
@@ -61,6 +62,7 @@ def match_and_validate(
     actual_events: Sequence[ActualEvent],
     matching_config: MatchingConfig,
     schema_fields: Sequence[FlattenedField],
+    validation_field_names: Collection[str] | None = None,
 ) -> MatchValidationResult:
     """Match actual events to expected events and validate expected field values."""
     enabled_expected_events = [event for event in expected_events if event.enabled]
@@ -71,6 +73,7 @@ def match_and_validate(
         expected_events_by_sender=_group_expected_events_by_sender(
             enabled_expected_events
         ),
+        validation_field_names=validation_field_names,
     )
     state = _MatchingState(
         matches=[],
@@ -131,6 +134,7 @@ def _process_actual_event(
         selected.expected_values,
         actual_event.flattened,
         context.field_kinds,
+        context.validation_field_names,
     )
     state.matches.append(
         ValidatedMatch(
@@ -183,9 +187,12 @@ def _validate_expected_values(
     expected_values: Mapping[str, object],
     actual_values: Mapping[str, object],
     field_kinds: Mapping[str, _FieldKind],
+    validation_field_names: Collection[str] | None,
 ) -> list[FieldMismatch]:
     mismatches: list[FieldMismatch] = []
     for field, expected_value in expected_values.items():
+        if validation_field_names is not None and field not in validation_field_names:
+            continue
         expectation = parse_expectation_rule(expected_value)
         if expectation.kind == ExpectationRuleKind.IGNORE:
             continue

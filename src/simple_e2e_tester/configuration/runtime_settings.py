@@ -25,6 +25,13 @@ class MatchingConfig:
 
 
 @dataclass(frozen=True)
+class ValidationSettings:
+    """Subset of flattened field names to validate against actual values."""
+
+    field_names: tuple[str, ...] | None
+
+
+@dataclass(frozen=True)
 class SMTPSettings:  # pylint: disable=too-many-instance-attributes
     """SMTP server connectivity configuration."""
 
@@ -70,6 +77,7 @@ class Configuration:  # pylint: disable=too-many-instance-attributes
     kafka_event_schema: SchemaConfig | None
     transport: TransportSettings
     matching: MatchingConfig
+    validation: ValidationSettings
     smtp: SMTPSettings
     mail: MailSettings
     kafka: KafkaSettings

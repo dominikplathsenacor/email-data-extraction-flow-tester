@@ -575,3 +575,59 @@ def test_given_rest_mode_when_kafka_section_missing_then_configuration_loads(
 
     assert configuration.transport.mode == "rest"
     assert configuration.kafka.topic == "REST_DIRECT"
+
+
+def test_loads_validation_field_names_when_configured(tmp_path: Path) -> None:
+    config = {
+        "schema": {
+            "json_schema": {
+                "inline": json.dumps(
+                    {
+                        "type": "object",
+                        "properties": {
+                            "sender": {"type": "string"},
+                            "subject": {"type": "string"},
+                            "score": {"type": "number"},
+                        },
+                    }
+                )
+            }
+        },
+        "matching": {"from_field": "sender", "subject_field": "subject"},
+        "validation": {"field_names": ["score"]},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "kafka": {"bootstrap_servers": "localhost:9092", "topic": "email-results"},
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.validation.field_names == ("score",)
+
+
+def test_errors_when_validation_field_name_is_not_in_schema(tmp_path: Path) -> None:
+    config = {
+        "schema": {
+            "json_schema": {
+                "inline": json.dumps(
+                    {
+                        "type": "object",
+                        "properties": {
+                            "sender": {"type": "string"},
+                            "subject": {"type": "string"},
+                        },
+                    }
+                )
+            }
+        },
+        "matching": {"from_field": "sender", "subject_field": "subject"},
+        "validation": {"field_names": ["score"]},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "kafka": {"bootstrap_servers": "localhost:9092", "topic": "email-results"},
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    with pytest.raises(ConfigurationError, match="validation.field_names"):
+        load_configuration(config_path)

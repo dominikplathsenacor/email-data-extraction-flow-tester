@@ -11,6 +11,7 @@ from simple_e2e_tester.configuration.runtime_settings import (
     MailSettings,
     MatchingConfig,
     RestSettings,
+    ValidationSettings,
     SchemaConfig,
     SMTPSettings,
     TransportSettings,
@@ -335,6 +336,7 @@ def _build_run_artifacts(
         transport=TransportSettings(mode="rest"),
         matching=matching
         or MatchingConfig(from_field="sender", subject_field="subject"),
+        validation=ValidationSettings(field_names=None),
         smtp=SMTPSettings(
             host="smtp.example.com",
             port=25,
@@ -378,6 +380,7 @@ def _build_run_artifacts(
     return RunArtifacts(
         configuration=configuration,
         fields=fields,
+        validation_field_names=tuple(field.path for field in fields),
         testcases=testcases,
         attachments_base=Path("/tmp"),
     )

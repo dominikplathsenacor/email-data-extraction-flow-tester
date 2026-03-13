@@ -62,12 +62,14 @@ def _evaluate(
     testcases: list[TemplateTestCase],
     messages: list[ActualEventMessage],
     schema_fields: list[FlattenedField],
+    validation_field_names: tuple[str, ...] | None = None,
 ):
     return match_and_validate(
         to_expected_events(testcases),
         to_actual_events(messages),
         _matching_config(),
         schema_fields,
+        validation_field_names,
     )
 
 
@@ -258,6 +260,39 @@ def test_float_tolerance_supports_upper_and_lower_bounds() -> None:
     assert (
         len(_evaluate([lower], [lower_fail], schema_fields).matches[0].mismatches) == 1
     )
+
+
+def test_validates_only_configured_field_subset() -> None:
+    testcase = _testcase(
+        test_id="TC-1",
+        expected_values={
+            "score": 1.58,
+            "comment": "expected comment",
+        },
+    )
+    message = _message(
+        {
+            "sender": "sender@example.com",
+            "subject": "Subject",
+            "score": 1.58,
+            "comment": "different actual comment",
+        }
+    )
+    schema_fields = _fields(
+        ("sender", {"type": "string"}),
+        ("subject", {"type": "string"}),
+        ("score", {"type": "number"}),
+        ("comment", {"type": "string"}),
+    )
+
+    result = _evaluate(
+        [testcase],
+        [message],
+        schema_fields,
+        validation_field_names=("score",),
+    )
+
+    assert result.matches[0].mismatches == ()
 
 
 def test_exact_validation_trims_whitespace_and_compares_integers_numerically() -> None:

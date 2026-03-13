@@ -24,7 +24,11 @@ from simple_e2e_tester.run_execution.validation_run_use_case import (
 from simple_e2e_tester.template_generation import TEMPLATE_SHEET_NAME
 
 
-def _write_config(tmp_path: Path, schema_type: str = "json_schema") -> Path:
+def _write_config(
+    tmp_path: Path,
+    schema_type: str = "json_schema",
+    validation_field_names: list[str] | None = None,
+) -> Path:
     json_schema = json.dumps(
         {
             "type": "object",
@@ -57,6 +61,8 @@ def _write_config(tmp_path: Path, schema_type: str = "json_schema") -> Path:
         "mail": {"to_address": "qa@example.com"},
         "kafka": {"bootstrap_servers": "localhost:9092", "topic": "result-topic"},
     }
+    if validation_field_names is not None:
+        config["validation"] = {"field_names": validation_field_names}
     path = tmp_path / "config.json"
     path.write_text(json.dumps(config), encoding="utf-8")
     return path
@@ -668,3 +674,61 @@ def test_given_rest_mode_when_run_executes_then_runinfo_contains_rest_direct_top
         row[0].value: row[1].value for row in run_info_sheet.iter_rows(min_row=2)
     }
     assert run_info["kafka_topic"] == "REST_DIRECT"
+
+
+def test_given_validation_field_subset_when_live_run_executes_then_only_subset_is_compared(
+    tmp_path: Path,
+) -> None:
+    config_path = _write_config(
+        tmp_path,
+        schema_type="json_schema",
+        validation_field_names=["score"],
+    )
+    template_path = _write_template(tmp_path, config_path)
+    workbook = load_workbook(template_path)
+    sheet = workbook[TEMPLATE_SHEET_NAME]
+    header_map = {
+        sheet.cell(row=2, column=col).value: col
+        for col in range(1, sheet.max_column + 1)
+    }
+    sheet.cell(row=3, column=header_map["sender"]).value = "expected sender mismatch"
+    workbook.save(template_path)
+    output_dir = tmp_path / "results"
+
+    class FakeEmailSender:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        def send_all(self, testcases):
+            return [EmailSendResult.sent(testcase.test_id) for testcase in testcases]
+
+    class FakeKafkaService:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        def consume_from(self, start_time):
+            flattened = {
+                "sender": "sender@example.com",
+                "subject": "Subject-1",
+                "score": 1.58,
+            }
+            yield ActualEventMessage(
+                key=None,
+                value=flattened,
+                timestamp=datetime.now(UTC),
+                flattened=flattened,
+            )
+
+    outcome = execute_email_kafka_validation_run(
+        RunRequest(
+            config_path=str(config_path),
+            input_path=str(template_path),
+            output_dir=str(output_dir),
+            dry_run=False,
+        ),
+        email_sender_cls=FakeEmailSender,
+        kafka_service_cls=FakeKafkaService,
+    )
+
+    result_sheet = load_workbook(outcome.output_path)[TEMPLATE_SHEET_NAME]
+    assert result_sheet.cell(row=3, column=result_sheet.max_column).value == "OK"

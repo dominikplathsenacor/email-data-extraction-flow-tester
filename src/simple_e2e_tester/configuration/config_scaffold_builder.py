@@ -35,6 +35,12 @@ matching:
   from_field: "<REQUIRED>"
   subject_field: "<REQUIRED>"
 
+validation:
+  # Optional subset of flattened schema field paths to validate.
+  # If omitted, all schema-derived fields are validated.
+  field_names:
+    - "<OPTIONAL>"
+
 smtp:
   host: "<REQUIRED>"
   port: "<REQUIRED>"
