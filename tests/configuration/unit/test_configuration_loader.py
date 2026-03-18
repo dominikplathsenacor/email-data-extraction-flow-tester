@@ -392,6 +392,7 @@ def test_loads_rest_transport_configuration_with_defaults(tmp_path: Path) -> Non
     assert configuration.rest is not None
     assert configuration.rest.method == "POST"
     assert configuration.rest.timeout_seconds == 30
+    assert configuration.rest.wait_between_calls_seconds is None
     assert configuration.rest.retry_count == 2
     assert configuration.rest.retry_backoff_ms == 250
     assert configuration.rest.path == "/extract"
@@ -443,6 +444,50 @@ def test_loads_rest_transport_basic_auth_when_configured(tmp_path: Path) -> None
     assert configuration.rest is not None
     assert configuration.rest.basic_auth_username == "Example_User"
     assert configuration.rest.basic_auth_password == "Example_PW"
+
+
+def test_loads_rest_wait_between_calls_when_configured(tmp_path: Path) -> None:
+    config = {
+        "transport": {"mode": "rest"},
+        "schema": {
+            "rest_response": {
+                "json_schema": {
+                    "inline": json.dumps(
+                        {
+                            "type": "object",
+                            "properties": {
+                                "emailabsender": {"type": "string"},
+                                "emailbetreff": {"type": "string"},
+                            },
+                        }
+                    )
+                }
+            },
+        },
+        "matching": {"from_field": "emailabsender", "subject_field": "emailbetreff"},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "rest": {
+            "base_url": "http://localhost:10888",
+            "path": "/prediction",
+            "wait_between_calls_seconds": 3,
+            "defaults": {
+                "ag": "KV",
+                "dokart": "BRIEF",
+                "dokrefuid": "REF-1",
+                "eingangsdatum": "2026-01-01-00.00.00.000000",
+                "flowid": "FLOW-1",
+                "ordnungsbegriff": "ORD-1",
+                "referenztyp": "EM",
+            },
+        },
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.rest is not None
+    assert configuration.rest.wait_between_calls_seconds == 3
 
 
 def test_errors_when_rest_transport_selected_without_rest_response_schema(

@@ -366,12 +366,20 @@ def _parse_rest_section(
     method = _require_non_empty_string(
         section.get("method", "POST"), "rest.method"
     ).upper()
+    wait_between_calls_seconds_raw = section.get("wait_between_calls_seconds")
     return RestSettings(
         base_url=_require_non_empty_string(section.get("base_url"), "rest.base_url"),
         path=_require_non_empty_string(section.get("path"), "rest.path"),
         method=method,
         timeout_seconds=_require_positive_int(
             section.get("timeout_seconds", 30), "rest.timeout_seconds"
+        ),
+        wait_between_calls_seconds=(
+            None
+            if wait_between_calls_seconds_raw is None
+            else _require_positive_int(
+                wait_between_calls_seconds_raw, "rest.wait_between_calls_seconds"
+            )
         ),
         retry_count=_require_non_negative_int(
             section.get("retry_count", 2), "rest.retry_count"

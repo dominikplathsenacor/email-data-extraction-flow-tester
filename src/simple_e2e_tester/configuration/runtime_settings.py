@@ -99,6 +99,7 @@ class RestSettings:
     path: str
     method: str
     timeout_seconds: int
+    wait_between_calls_seconds: int | None
     retry_count: int
     retry_backoff_ms: int
     defaults: Mapping[str, str]

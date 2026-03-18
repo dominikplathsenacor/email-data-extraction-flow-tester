@@ -77,6 +77,7 @@ rest:
   path: "<REQUIRED>"
   method: "POST"
   timeout_seconds: "<OPTIONAL>"
+  wait_between_calls_seconds: "<OPTIONAL>"
   retry_count: "<OPTIONAL>"
   retry_backoff_ms: "<OPTIONAL>"
   auth:

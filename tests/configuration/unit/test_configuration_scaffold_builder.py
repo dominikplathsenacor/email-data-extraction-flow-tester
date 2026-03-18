@@ -18,6 +18,7 @@ def test_build_placeholder_configuration_contains_all_supported_sections() -> No
     assert "schema:" in scaffold
     assert "transport:" in scaffold
     assert "rest:" in scaffold
+    assert "wait_between_calls_seconds:" in scaffold
     assert "avsc:" in scaffold
     assert "json_schema:" in scaffold
     assert "kafka_event:" in scaffold

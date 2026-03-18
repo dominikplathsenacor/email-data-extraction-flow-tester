@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
+import time
 from typing import Protocol
 
 import requests
@@ -97,7 +98,9 @@ class RestExecutionTransport:  # pylint: disable=too-few-public-methods
         actual_messages: list[ActualEventMessage] = []
         sent_ok = 0
         consecutive_failures = 0
+        attempted_requests = 0
         endpoint = _build_endpoint(rest_settings.base_url, rest_settings.path)
+        wait_between_calls_seconds = rest_settings.wait_between_calls_seconds
 
         for testcase in artifacts.testcases:
             if not testcase.enabled:
@@ -106,6 +109,9 @@ class RestExecutionTransport:  # pylint: disable=too-few-public-methods
             if consecutive_failures >= self._ABORT_AFTER_CONSECUTIVE_FAILURES:
                 send_status_by_test_id[testcase.test_id] = SendStatus.SKIPPED
                 continue
+            if attempted_requests > 0 and wait_between_calls_seconds is not None:
+                time.sleep(wait_between_calls_seconds)
+            attempted_requests += 1
             payload = _build_request_payload(
                 testcase=testcase, defaults=rest_settings.defaults
             )

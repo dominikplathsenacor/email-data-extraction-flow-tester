@@ -317,6 +317,58 @@ def test_given_nested_response_when_rest_transport_executes_then_schema_fields_a
     }
 
 
+def test_given_wait_between_calls_when_rest_transport_executes_then_it_sleeps_between_requests(
+    monkeypatch,
+) -> None:
+    testcases = (
+        TemplateTestCase(
+            row_number=3,
+            test_id="TC-REST-1",
+            tags=(),
+            enabled=True,
+            notes="",
+            from_address="sender@example.com",
+            subject="Subject-1",
+            body="Body value",
+            attachment="",
+            expected_values={},
+        ),
+        TemplateTestCase(
+            row_number=4,
+            test_id="TC-REST-2",
+            tags=(),
+            enabled=True,
+            notes="",
+            from_address="sender@example.com",
+            subject="Subject-2",
+            body="Body value",
+            attachment="",
+            expected_values={},
+        ),
+    )
+    artifacts = _build_run_artifacts(testcases, wait_between_calls_seconds=2)
+    client = _FakeRestClient({"sender": "sender@example.com", "subject": "Subject-1"})
+    sleep_calls: list[int] = []
+
+    def _sleep(seconds: int) -> None:
+        sleep_calls.append(seconds)
+
+    monkeypatch.setattr(
+        "simple_e2e_tester.rest_execution.rest_transport.time.sleep",
+        _sleep,
+    )
+
+    result = RestExecutionTransport(client).execute(
+        artifacts=artifacts,
+        run_start=datetime.now(UTC),
+    )
+
+    assert result.sent_ok == 2
+    assert sleep_calls == [2]
+    assert client.calls[0][2]["emailbetreff"] == "Subject-1"
+    assert client.calls[1][2]["emailbetreff"] == "Subject-2"
+
+
 def _build_run_artifacts(
     testcases: tuple[TemplateTestCase, ...],
     *,
@@ -324,6 +376,7 @@ def _build_run_artifacts(
     matching: MatchingConfig | None = None,
     basic_auth_username: str | None = None,
     basic_auth_password: str | None = None,
+    wait_between_calls_seconds: int | None = None,
 ) -> RunArtifacts:
     schema = SchemaConfig(
         schema_type="json_schema", text='{"type":"object"}', source_path=None
@@ -362,6 +415,7 @@ def _build_run_artifacts(
             path="/extract",
             method="POST",
             timeout_seconds=30,
+            wait_between_calls_seconds=wait_between_calls_seconds,
             retry_count=2,
             retry_backoff_ms=250,
             defaults={
