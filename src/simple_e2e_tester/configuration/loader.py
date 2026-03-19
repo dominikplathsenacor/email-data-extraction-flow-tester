@@ -348,21 +348,11 @@ def _parse_rest_section(
         return None
 
     section = _require_mapping(value, "rest")
-    defaults = _require_mapping(section.get("defaults"), "rest.defaults")
+    defaults = _parse_rest_defaults_section(section)
     auth = _parse_rest_auth_section(section.get("auth"))
-    defaults_required = (
-        "ag",
-        "dokart",
-        "dokrefuid",
-        "eingangsdatum",
-        "flowid",
-        "ordnungsbegriff",
-        "referenztyp",
+    parsed_defaults = _normalize_string_mapping(
+        defaults, "rest.default_request_params", allow_empty=True
     )
-    parsed_defaults = {
-        key: _require_non_empty_string(defaults.get(key), f"rest.defaults.{key}")
-        for key in defaults_required
-    }
     method = _require_non_empty_string(
         section.get("method", "POST"), "rest.method"
     ).upper()
@@ -414,6 +404,21 @@ def _parse_rest_auth_section(value: Any) -> tuple[str | None, str | None]:
     return username, password
 
 
+def _parse_rest_defaults_section(section: Mapping[str, Any]) -> Mapping[str, Any]:
+    default_request_params = section.get("default_request_params")
+    legacy_defaults = section.get("defaults")
+    if default_request_params is not None and legacy_defaults is not None:
+        raise ConfigurationError(
+            "Use either rest.default_request_params or rest.defaults, not both."
+        )
+    if default_request_params is None and legacy_defaults is None:
+        return {}
+    raw_defaults = (
+        default_request_params if default_request_params is not None else legacy_defaults
+    )
+    return _require_mapping(raw_defaults, "rest.default_request_params")
+
+
 def _normalize_bootstrap_servers(value: Any) -> tuple[str, ...]:
     if value is None:
         raise ConfigurationError("kafka.bootstrap_servers is required.")
@@ -456,6 +461,21 @@ def _normalize_string_sequence(value: Any) -> tuple[str, ...]:
                 normalized.append(stripped)
         return tuple(normalized)
     raise ConfigurationError("mail.cc/bcc must be a string or list of strings.")
+
+
+def _normalize_string_mapping(
+    value: Mapping[str, Any], field_name: str, *, allow_empty: bool = False
+) -> dict[str, str]:
+    normalized: dict[str, str] = {}
+    for (key, raw_value) in value.items():
+        normalized_key = _require_non_empty_string(key, f"{field_name} key")
+        normalized_value = _require_non_empty_string(
+            raw_value, f"{field_name}.{normalized_key}"
+        )
+        normalized[normalized_key] = normalized_value
+    if not normalized and not allow_empty:
+        raise ConfigurationError(f"{field_name} must contain at least one entry.")
+    return normalized
 
 
 def _resolve_path(base_path: Path, raw_path: str) -> Path:

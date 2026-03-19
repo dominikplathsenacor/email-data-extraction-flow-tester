@@ -39,16 +39,15 @@ from simple_e2e_tester.schema_management import (
     flatten_schema,
     load_schema_document,
 )
-from simple_e2e_tester.template_ingestion.workbook_reader import (
-    TemplateValidationError,
-    read_template,
-)
-
-from .run_contracts import (
+from simple_e2e_tester.run_execution.run_contracts import (
     RunArtifacts,
     RunOutcome,
     RunRequest,
     TransportExecutionResult,
+)
+from simple_e2e_tester.template_ingestion.workbook_reader import (
+    TemplateValidationError,
+    read_template,
 )
 
 

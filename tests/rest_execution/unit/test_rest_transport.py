@@ -369,6 +369,51 @@ def test_given_wait_between_calls_when_rest_transport_executes_then_it_sleeps_be
     assert client.calls[1][2]["emailbetreff"] == "Subject-2"
 
 
+def test_given_flexible_defaults_when_rest_transport_executes_then_defaults_are_merged_into_payload() -> None:
+    testcase = TemplateTestCase(
+        row_number=3,
+        test_id="TC-REST-FLEX",
+        tags=(),
+        enabled=True,
+        notes="",
+        from_address="sender@example.com",
+        subject="Subject-1",
+        body="Body value",
+        attachment="",
+        expected_values={},
+    )
+    artifacts = _build_run_artifacts(
+        (testcase,),
+        defaults={
+            "tenant": "demo",
+            "document_type": "email",
+        },
+    )
+    client = _FakeRestClient({"sender": "sender@example.com", "subject": "Subject-1"})
+
+    RestExecutionTransport(client).execute(
+        artifacts=artifacts,
+        run_start=datetime.now(UTC),
+    )
+
+    assert client.calls == [
+        (
+            "POST",
+            "http://localhost:8080/extract",
+            {
+                "tenant": "demo",
+                "document_type": "email",
+                "emailabsender": "sender@example.com",
+                "emailbetreff": "Subject-1",
+                "dok_text": "Body value",
+            },
+            30,
+            None,
+            None,
+        )
+    ]
+
+
 def _build_run_artifacts(
     testcases: tuple[TemplateTestCase, ...],
     *,
@@ -377,6 +422,7 @@ def _build_run_artifacts(
     basic_auth_username: str | None = None,
     basic_auth_password: str | None = None,
     wait_between_calls_seconds: int | None = None,
+    defaults: dict[str, str] | None = None,
 ) -> RunArtifacts:
     schema = SchemaConfig(
         schema_type="json_schema", text='{"type":"object"}', source_path=None
@@ -418,7 +464,8 @@ def _build_run_artifacts(
             wait_between_calls_seconds=wait_between_calls_seconds,
             retry_count=2,
             retry_backoff_ms=250,
-            defaults={
+            defaults=defaults
+            or {
                 "ag": "AG-1",
                 "dokart": "DOKART-1",
                 "dokrefuid": "DOKREF-1",

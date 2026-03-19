@@ -33,6 +33,10 @@ def test_build_placeholder_configuration_contains_all_supported_sections() -> No
     assert "<REQUIRED>" in scaffold
     assert "<OPTIONAL>" in scaffold
     assert "# REST response schema" in scaffold
+    assert "default_request_params:" in scaffold
+    assert '"<OPTIONAL_KEY>": "<OPTIONAL_VALUE>"' in scaffold
+    assert "Optional static request fields" in scaffold
+    assert "ag:" not in scaffold
 
 
 def test_write_placeholder_configuration_writes_file(tmp_path: Path) -> None:

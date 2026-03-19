@@ -15,6 +15,7 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+.codex-test-write
 
 # Generated build/packaging outputs
 build/

@@ -490,6 +490,123 @@ def test_loads_rest_wait_between_calls_when_configured(tmp_path: Path) -> None:
     assert configuration.rest.wait_between_calls_seconds == 3
 
 
+def test_loads_rest_transport_configuration_with_flexible_defaults(tmp_path: Path) -> None:
+    config = {
+        "transport": {"mode": "rest"},
+        "schema": {
+            "rest_response": {
+                "json_schema": {
+                    "inline": json.dumps(
+                        {
+                            "type": "object",
+                            "properties": {
+                                "emailabsender": {"type": "string"},
+                                "emailbetreff": {"type": "string"},
+                            },
+                        }
+                    )
+                }
+            },
+        },
+        "matching": {"from_field": "emailabsender", "subject_field": "emailbetreff"},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "rest": {
+            "base_url": "http://localhost:10888",
+            "path": "/prediction",
+            "defaults": {
+                "tenant": "demo",
+                "document_type": "email",
+            },
+        },
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.rest is not None
+    assert configuration.rest.defaults == {
+        "tenant": "demo",
+        "document_type": "email",
+    }
+
+
+def test_loads_rest_transport_configuration_when_default_request_params_missing(tmp_path: Path) -> None:
+    config = {
+        "transport": {"mode": "rest"},
+        "schema": {
+            "rest_response": {
+                "json_schema": {
+                    "inline": json.dumps(
+                        {
+                            "type": "object",
+                            "properties": {
+                                "emailabsender": {"type": "string"},
+                                "emailbetreff": {"type": "string"},
+                            },
+                        }
+                    )
+                }
+            }
+        },
+        "matching": {"from_field": "emailabsender", "subject_field": "emailbetreff"},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "rest": {
+            "base_url": "http://localhost:10888",
+            "path": "/prediction",
+        },
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.rest is not None
+    assert configuration.rest.defaults == {}
+
+
+
+def test_loads_rest_transport_configuration_with_default_request_params_alias(tmp_path: Path) -> None:
+    config = {
+        "transport": {"mode": "rest"},
+        "schema": {
+            "rest_response": {
+                "json_schema": {
+                    "inline": json.dumps(
+                        {
+                            "type": "object",
+                            "properties": {
+                                "emailabsender": {"type": "string"},
+                                "emailbetreff": {"type": "string"},
+                            },
+                        }
+                    )
+                }
+            },
+        },
+        "matching": {"from_field": "emailabsender", "subject_field": "emailbetreff"},
+        "smtp": {"host": "smtp.example.com", "port": 25},
+        "mail": {"to_address": "qa@example.com"},
+        "rest": {
+            "base_url": "http://localhost:10888",
+            "path": "/prediction",
+            "default_request_params": {
+                "tenant": "demo",
+                "document_type": "email",
+            },
+        },
+    }
+    config_path = _write_file(tmp_path / "config.json", json.dumps(config))
+
+    configuration = load_configuration(config_path)
+
+    assert configuration.rest is not None
+    assert configuration.rest.defaults == {
+        "tenant": "demo",
+        "document_type": "email",
+    }
+
+
 def test_errors_when_rest_transport_selected_without_rest_response_schema(
     tmp_path: Path,
 ) -> None:

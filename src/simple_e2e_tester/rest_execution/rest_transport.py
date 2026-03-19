@@ -157,15 +157,9 @@ def _build_request_payload(
     *, testcase, defaults: Mapping[str, str]
 ) -> dict[str, object]:
     return {
-        "ag": defaults["ag"],
-        "dokart": defaults["dokart"],
-        "dokrefuid": defaults["dokrefuid"],
-        "eingangsdatum": defaults["eingangsdatum"],
+        **defaults,
         "emailabsender": testcase.from_address,
         "emailbetreff": testcase.subject,
-        "flowid": defaults["flowid"],
-        "ordnungsbegriff": defaults["ordnungsbegriff"],
-        "referenztyp": defaults["referenztyp"],
         "dok_text": testcase.body,
     }
 

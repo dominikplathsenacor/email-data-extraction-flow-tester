@@ -84,14 +84,10 @@ rest:
     basic:
       username: "<OPTIONAL>"
       password: "<OPTIONAL>"
-  defaults:
-    ag: "<REQUIRED>"
-    dokart: "<REQUIRED>"
-    dokrefuid: "<REQUIRED>"
-    eingangsdatum: "<REQUIRED>"
-    flowid: "<REQUIRED>"
-    ordnungsbegriff: "<REQUIRED>"
-    referenztyp: "EM"
+  # Optional static request fields included with every REST call.
+  default_request_params:
+    "<OPTIONAL_KEY>": "<OPTIONAL_VALUE>"
+    # "<OPTIONAL_KEY_2>": "<OPTIONAL_VALUE_2>"
 """
 
 
