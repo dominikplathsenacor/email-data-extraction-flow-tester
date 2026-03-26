@@ -1,6 +1,6 @@
 # Testing and Quality
 
-The repository follows a TDD-oriented workflow and domain-focused test layout from `AGENTS.md`.
+The repository follows a TDD-oriented workflow and domain-focused test layout.
 
 ## Test layout
 

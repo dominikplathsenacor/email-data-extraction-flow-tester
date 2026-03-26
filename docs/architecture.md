@@ -2,7 +2,7 @@
 
 ## Design style
 
-The project is organized by business domain (DDD-style), aligned with `AGENTS.md`.
+The project is organized by business domain (DDD-style).
 Each domain owns its entities, services, and tests.
 
 ## Domain map

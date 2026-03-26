@@ -8,7 +8,7 @@ It provides CLI commands for setup and execution:
 - `generate-template`: build a test template workbook from an AVSC or JSON event schema.
 - `run`: execute test rows from a filled test template using configured transport (`rest` or `email_kafka`), validate expected vs actual values, and write a result workbook.
 
-The implementation follows a domain-first structure and TDD workflow as defined in `AGENTS.md`.
+The implementation follows a domain-first structure and a TDD-oriented workflow.
 
 ## Current implementation status
 
@@ -111,7 +111,6 @@ transport:
 - CLI workflow and workbook semantics: `docs/workflows.md`
 - Spec alignment and known gaps: `docs/spec-alignment.md`
 - Testing and quality gates: `docs/testing-and-quality.md`
-- Development process and constraints: `AGENTS.md`
 
 ## Repository layout
 

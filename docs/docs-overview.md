@@ -12,4 +12,7 @@ This folder contains implementation-facing documentation for `simple-e2e-tester`
 
 ## Source-of-truth documents
 
-- Development process and architectural constraints: `../AGENTS.md`
+- Architecture and domain boundaries: `architecture.md`
+- Configuration reference: `configuration.md`
+- Workflow and workbook semantics: `workflows.md`
+- Testing and quality gates: `testing-and-quality.md`
